@@ -1,7 +1,10 @@
 ---
 title: CKA Section 2 - Core Concepts
-status: in-progress
-tags: [cka, udemy, source-note]
+status: completed
+tags:
+  - cka
+  - udemy
+  - source-note
 ---
 # Section 2: Core Concepts
 ## Lecture 6: Core Concepts - Section Introduction
@@ -413,7 +416,286 @@ Reference (Bookmark this page for exam. It will be very handy):
 **OR**
 **In k8s version 1.19+, we can specify the --replicas option to create a deployment with 4 replicas.**
 `kubectl create deployment --image=nginx nginx --replicas=4 --dry-run=client -o yaml > nginx-deployment.yaml`
+
+```bash
+# 1. Cấu hình Vim
+cat <<EOF > ~/.vimrc
+set tabstop=2
+set shiftwidth=2
+set expandtab
+set number
+set smartindent
+EOF
+
+# 2. Cấu hình Alias & Autocomplete vào ~/.bashrc
+cat <<EOF >> ~/.bashrc
+alias k='kubectl'
+export do="--dry-run=client -o yaml"
+export force="--force --grace-period=0"
+EOF
+
+# 3. Kích hoạt môi trường
+source ~/.bashrc
+```
 ## Lecture 31 & 32: Labs - Deployment
 ```bash
 kubectl get deploy
 ```
+## Lecture 33 & 34 & 35: Services
+- Kubernetes services enable communication between various **components** within and outside of the application. It helps us connect applications together with other **applications** or **users**.
+
+![[Pasted image 20260730105617.png]]
+> For example, our apps has groups of pods running various sections, such as a group for serving a front-end load to users, another group for running back-end processes, and a group connecting to an external data source. 
+> It is services that enable connectivity between these groups of pods:
+> - It enable the front-end application to be made available to end users.
+> - It help communicate between back-end and front-end pods.
+> - It help establishing connectivity to an external data source
+
+- Kubernetes service is an object just like Pods, ReplicaSets, or Deployments.
+- NodePort service: It listens to a port on the node, and forward requests on that port to a port on the pod running the application. It is where the service makes an internal pod accessible on a port on the node. This type of service is called like that because the service listens to a port on the node and forward requests to the pod. For below example:
+	- The http://192.168.1.2:30008 URL will call the NodePort service. Then the request will be forwarded to Pods that use it).
+	- Let's take a closer look. There are 3 ports involved.![[Pasted image 20260730113042.png]]
+	- The port on the pod, where the actual web server is running, is *80*, and in is referred to as the targetPort because that is the service forwards the request to.
+	- The second port is the port on the service itself. It is simply referred to as the port. The service is in fact like a virtual server inside the node. Inside the cluster, it has its own IP address, and that IP address is called the cluster IP of the service.
+	- Finally we have the port on the node itself which we use to access the web server externally, and that is known as the NodePort. As you can see it is set to *30008*. NodePorts can only be in a valid range, which by default is from 30000 to 32767.
+	- When we create a service, Kubernetes automatically creates a service that spans across all the nodes in the cluster and maps the target port to the same nodePort on all the nodes in the cluster. This way, you can access your application using the IP of any node in the cluster and using the same port.![[Pasted image 20260730122005.png]]
+```yaml
+# svc-nodeport-def.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-service
+spec:
+  type: NodePort # (NodePort/ClusterIP/LoadBalancer)
+  ports:
+  - targetPort: 80 # Default is assumed to be the same as port
+    port: 80 # Mandatory field
+    nodePort: 30008 # Automatically allocates (30000-32767) if not provided
+  selector: # Labels from the pod definition file
+    app: myapp
+    type: front-end
+```
+
+```bash
+kubectl create -f svc-nodeport-def.yaml
+kubectl get services
+
+curl http://<Host IP>:30008
+
+# Or
+k create deploy nginx-deploy --image=nginx --replicas=3 --port=80 $do > nginx-dep.yaml
+k create svc nodeport nginx-deploy --tcp=8080:80 --node-port=30008 $do > nginx-nodeport-svc.yaml
+k apply -f nginx-dep.yaml -f nginx-nodeport-svc.yaml
+```
+
+- ClusterIP: It creates a virtual IP inside the cluster to enable communication between services, such as a set of front-end servers to a set of back-end servers:. The service can be accessed by other pods using the cluster IP or the service name.![[Pasted image 20260730123857.png]]
+```yaml
+# svc-clusterip-def.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: back-end
+spec:
+  type: ClusterIP # NodePort/ClusterIP/LoadBalancer (ClusterIP is default btw)
+  ports:
+  - targetPort: 8080 # Default is assumed to be the same as port
+    port: 80 # Mandatory field
+  selector: # Labels from the pod definition file
+    app: myapp
+    type: back-end
+```
+
+```bash
+kubectl create -f svc-clusterip-def.yaml
+kubectl get services
+
+# Or
+k create deploy nginx-deploy --image=nginx --replicas=3 --port=80 $do > nginx-dep.yaml
+k create svc clusterip nginx-deploy ---tcp=8080:80 $do > nginx-clusterip-def.yaml
+k apply -f nginx-dep.yaml -f nginx-clusterip-svc.yaml
+```
+- LoadBalancer: It provisions a load balancer for our application is supported cloud providers. A good example of that would be to distribute load across the different web servers in your front-end tier.
+- Kubernetes has support for integrating with the native load balancer of certain cloud providers, and configuring that for us. 
+```yaml
+# svc-nodeport-def.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-service
+spec:
+  type: LoadBalancer # (NodePort/ClusterIP/LoadBalancer)
+  ports:
+  - targetPort: 80 # Default is assumed to be the same as port
+    port: 80 # Mandatory field
+    nodePort: 30008 # Automatically allocates (30000-32767) if not provided
+  selector: # Labels from the pod definition file
+    app: myapp
+    type: front-end
+```
+> This will only works with supported cloud platforms such as GCP, AWS, Azure. If you set the type of service to LoadBalancer in an unsupported environment like VirtualBox or any other environments, then it would have the same effect as setting it to NodePort where the services are exposed on a high-end port on the nodes.
+## Lecture 36 & 37: Lab - Services
+## Lecture 38: Namespaces
+- You can assign quota of resources to each of those namespaces. That way, each namespace is guaranteed a certain amount and does not use more than its allowed limit.
+- The resources within a namespace can refer to each other simply by their names.![[Pasted image 20260730132512.png]]
+> In this case, the web-pod pod can reach the db-service pod simply using the hostname db-service.
+> If required, the web-pod pod can reach a service in another namespace as well. For this, you must append the name of the namespace to the name of the service -> `db-service.dev.svc.cluster.local`.
+> You are able to do this because when the service is created, a DNS entry is added automatically in this format:
+> - `cluster.local` is the default domain name of the Kubernetes cluster.
+> - `svc` is the subdomain for Service
+> - `dev` is the namespace
+> - `db-service` is the name of the service itself.
+- `kubectl get pods` is used to list all the pods, but it only lists the pods in the default namespace. To list pods in another namespace, use the namespace option in the command along with the name of the namespace (For example `--namespace=kube-system` or `-n kube-system`).
+- To create the pod in another namespace, use the namespace option or add namespace field in to metadata section in the pod definition file.
+- To create a namespace, use a namespace definition file:
+```yaml
+# ns-dev.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev
+```
+
+```bash
+kubectl create -f ns-dev.yaml
+# Or
+kubectl create namespace dev
+```
+- If you want to switch to the dev namespace permanently, so that you don't have to specify the namespace option all the times, use the `kubectl config set-context $(kubectl config current-context) --namespace=dev` command.
+- To view pods in all namespaces, use the `kubectl get pods --all-namespaces` or  `kubectl get pods -A` command.
+- To limit resources in a namespace, create a ResourceQuota. To create one, start with a definition file for ResourceQuota:
+```yaml
+# rq-dev.yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute-quota
+  namespace: dev
+spec:
+  hard:
+    pods: "10"
+    requests.cpu: "4"
+    requests.memory: 5Gi
+    limits.cpu: "10"
+    limits.memory: 10Gi
+```
+
+```bash
+kubectl create -f rq-dev.yaml
+```
+## Lecture 39 & 40: Lab - Services
+```bash
+kubectl get ns
+kubectl get pods -A
+```
+## Lecture 41: Imperative vs Declarative
+- In the IaC world, an example of an imperative approach of provisioning infrastructure would be a set of instructions written step by step. Here it saying what is required and also how to get things done.
+- In the declarative approach, we declare our requirements and everything that is needed to be done to get this infrastructure in place is done by the system or the software.
+- In the Kubernetes world, the imperative way of managing infrastructure is using commands like:
+	- The `kubectl run nginx --image=nginx` to create a pod
+	- The `kubectl expose deployment nginx --type=NodePort --port 80 --name nginx-svc` to create a service to expose a deployment
+	- The `kubectl set image deployment nginx nginx` to update the image on a deployment.
+	- The `kubectl replace -f nginx.yaml` to edit an object.
+- In the declarative approach, you will run the `kubectl apply -f nginx.yaml` for creating, updating, and deleting an object. The `apply` command will look at the existing configuration and figure out what changes need to be made to the system.
+## Lecture 42: Certification Tips - Imperative Commands with kubectl
+While you would be working mostly the declarative way - using definition files, imperative commands can help in getting one time tasks done quickly, as well as generate a definition template easily. This would help save considerable amount of time during your exams.
+
+Before we begin, familiarize with the two options that can come in handy while working with the below commands:
+
+`--dry-run`: By default as soon as the command is run, the resource will be created. If you simply want to test your command , use the `--dry-run=client` option. This will not create the resource, instead, tell you whether the resource can be created and if your command is right.
+
+`-o yaml`: This will output the resource definition in YAML format on screen.
+
+Use the above two in combination to generate a resource definition file quickly, that you can then modify and create resources as required, instead of creating the files from scratch.
+#### POD
+**Create an NGINX Pod**
+`kubectl run nginx --image=nginx`
+
+**Generate POD Manifest YAML file (-o yaml). Don't create it(--dry-run)**
+`kubectl run nginx --image=nginx --dry-run=client -o yaml`
+#### Deployment
+**Create a deployment**
+`kubectl create deployment --image=nginx nginx`
+
+**Generate Deployment YAML file (-o yaml). Don't create it(--dry-run)**
+`kubectl create deployment --image=nginx nginx --dry-run=client -o yaml`
+
+**Generate Deployment with 4 Replicas**
+`kubectl create deployment nginx --image=nginx --replicas=4`
+
+You can also scale a deployment using the `kubectl scale` command.
+`kubectl scale deployment nginx --replicas=4`
+
+**Another way to do this is to save the YAML definition to a file and modify**
+`kubectl create deployment nginx --image=nginx --dry-run=client -o yaml > nginx-deployment.yaml`
+
+You can then update the YAML file with the replicas or any other field before creating the deployment.
+#### Service
+**Create a Service named redis-service of type ClusterIP to expose pod redis on port 6379**
+`kubectl expose pod redis --port=6379 --name redis-service --dry-run=client -o yaml`
+(This will automatically use the pod's labels as selectors)
+
+Or
+
+`kubectl create service clusterip redis --tcp=6379:6379 --dry-run=client -o yaml` 
+(This will not use the pods labels as selectors, instead it will assume selectors as **app=redis.** [You cannot pass in selectors as an option.](https://github.com/kubernetes/kubernetes/issues/46191) So it does not work very well if your pod has a different label set. So generate the file and modify the selectors before creating the service)
+
+**Create a Service named nginx of type NodePort to expose pod nginx's port 80 on port 30080 on the nodes:**
+`kubectl expose pod nginx --type=NodePort --port=80 --name=nginx-service --dry-run=client -o yaml`
+(This will automatically use the pod's labels as selectors, [but you cannot specify the node port](https://github.com/kubernetes/kubernetes/issues/25478). You have to generate a definition file and then add the node port in manually before creating the service with the pod.)
+
+Or
+
+`kubectl create service nodeport nginx --tcp=80:80 --node-port=30080 --dry-run=client -o yaml`
+(This will not use the pods labels as selectors)
+
+Both the above commands have their own challenges. While one of it cannot accept a selector the other cannot accept a node port. I would recommend going with the `kubectl expose` command. If you need to specify a node port, generate a definition file using the same command and manually input the nodeport before creating the service.
+#### **Reference:**
+[https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands](https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands)
+[https://kubernetes.io/docs/reference/kubectl/conventions/](https://kubernetes.io/docs/reference/kubectl/conventions/)
+## Lecture 43: kubectl explain Command
+- To list all resources, you can simply run `kubectl api-resources` command.
+- You can run the `kubectl explain <resource-name>` command. Provide the resource name that you would like to be explained. To go deeper, run the same command but with a field to the command (For example `kubectl explain pods.spec`). To list all fields in the way that you would put them in a YAML file, use the recursive flag (`--recursive`).
+## Lecture 44 & 45: Lab - Imperative Commands
+Here are some helpful references:
+[Certified Kubernetes Administrator (CKA) official info](https://www.cncf.io/certification/cka/)
+[Exam Curriculum (Topics)](https://github.com/cncf/curriculum)
+[Candidate Handbook](https://www.cncf.io/certification/candidate-handbook)
+[Exam Tips](http://training.linuxfoundation.org/go//Important-Tips-CKA-CKAD)
+
+We have created a repository with notes, links to documentation and answers to practice questions here. Please make sure to go through these as you progress through the course:
+[https://github.com/kodekloudhub/certified-kubernetes-administrator-course](https://github.com/kodekloudhub/certified-kubernetes-administrator-course)
+```bash
+kubectl run -h
+kubectl run nginx --image=nginx:alpine --port=8080
+kubectl run redis --image=redis --labels="app=redis-app,tier=db"
+
+# This will assume selectors as app=redis, so you have to modify the YAML later
+kubectl create svc clusterip redis --tcp=6379:6379 --dry-run=client -o yaml > redis-svc.yaml
+# Or this will use pod's labels as selectors
+kubectl expose po redis --port=6379 --name=redis-svc
+kubectl expose po redis --port=6379 --name=redis-svc --type=NodePort
+
+kubectl create deploy nginx-webapp --image=nginx --replicas=3
+
+kubectl create ns dev-ns
+
+kubectl create deploy redis-deploy --image=redis --replicas=2 -n dev-ns
+kubectl run https --image=httpd:alpine --port=80 --expose=true
+```
+## Lecture 46: kubectl apply Command
+- The apply command takes into consideration the local configuration file, a live object definition on Kubernetes, and the last applied configuration before making a decision on what changes are to be made. So when you run the apply command:
+	- If the object does not already exist, the object is created.
+	- When the object is created, an object configuration similar to what we created locally is created within Kubernetes, but with additional fields to store status of the object. This is the **live configuration of the object** on the Kubernetes cluster.
+	- But when you use the apply command to create an object, it does a little bit more. The YAML version of the local object configuration file we wrote is converted to a JSON format, and it is then stored as the last applied configuration.
+	- Going forward for any updates to the object, all the three are compared to identify what changes are to be made on the live object.
+> For example, when the nginx image is updated to 1.19 in our local file and we run the `kubectl apply`. This value is compared with the value in the live configuration, and if there is a difference, the live configuration is updated with the new value.
+> After any change, the last applied JSON format is always updated to the latest so that it is always up to date.
+- The last applied configuration is stored on the live object configuration on the Kubernetes cluster itself as an annotation:
+```yaml
+...
+annotations:
+  kubectl.kubernetes.id/last-applied-configuration:
+    { JSON content }
+...
+```
+> The create or replace commands do not store the last applied configuration like this. So we must not to mix the imperative and declarative approaches while managing the Kubernetes objects.

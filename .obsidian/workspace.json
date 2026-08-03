@@ -4,39 +4,24 @@
     "type": "split",
     "children": [
       {
-        "id": "98a08919f09f667e",
+        "id": "db1a5faa98d5624e",
         "type": "tabs",
         "children": [
           {
-            "id": "fe4ec8e08d7e600f",
+            "id": "c91c3455cee68c5c",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "secrets/helios-hybrid-k3s-architecture-spec.md",
+                "file": "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/03 - Configuration.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "helios-hybrid-k3s-architecture-spec"
-            }
-          },
-          {
-            "id": "29cd12c184e27198",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "20 Notebooks/DevOps/Kubernetes/Kiến trúc Kubernetes (Control Plane và Worker Node).md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "Kiến trúc Kubernetes (Control Plane và Worker Node)"
+              "title": "03 - Configuration"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -56,7 +41,9 @@
               "type": "file-explorer",
               "state": {
                 "sortOrder": "alphabetical",
-                "autoReveal": false
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
               },
               "icon": "lucide-folder-closed",
               "title": "Files"
@@ -93,7 +80,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 417.5
+    "width": 333.5
   },
   "right": {
     "id": "63092ab4140c8493",
@@ -198,34 +185,47 @@
       "bases:Create new base": false
     }
   },
-  "active": "29cd12c184e27198",
+  "active": "c91c3455cee68c5c",
   "lastOpenFiles": [
-    "20 Notebooks/DevOps/Kubernetes/ETCD Data Store và etcdctl.md",
-    "20 Notebooks/DevOps/Kubernetes/CRI và công cụ Debug (crictl vs nerdctl).md",
-    "20 Notebooks/DevOps/Kubernetes/Kiến trúc Kubernetes (Control Plane và Worker Node).md",
-    "40 Sources/Udemy - Certified Kubernetes Administrator (CKA) with Practice Tests/00 - Master Index.md",
-    "40 Sources/Udemy - Certified Kubernetes Administrator (CKA) with Practice Tests/01 - Introduction.md",
-    "40 Sources/Udemy - Certified Kubernetes Administrator (CKA) with Practice Tests/02 - Core Concepts.md",
-    "Images/Pasted image 20260729151110.png",
-    "Images/Pasted image 20260728231506.png",
-    "Images/Pasted image 20260728224544.png",
-    "Images/Pasted image 20260728223950.png",
-    "Images/Pasted image 20260728223909.png",
-    "Images/Pasted image 20260728223818.png",
-    "Images/Pasted image 20260728223436.png",
-    "Images/Pasted image 20260728223729.png",
+    "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/01 - Introduction.md",
+    "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/00 - Master Index.md",
+    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/00 - Master Index.md",
+    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/01 - Introduction.md",
+    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/03 - Configuration.md",
+    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/02 - Core Concepts.md",
+    "Images/Pasted image 20260802215955.png",
+    "Pasted image 20260802215940.png",
+    "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/03 - Scheduling.md",
+    "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/02 - Core Concepts.md",
+    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests",
+    "20 Notebooks/DevOps/Kubernetes/CKA Imperative Commands Cheat Sheet.md",
+    "20 Notebooks/DevOps/Kubernetes/Container Runtime Interface (crictl vs nerdctl).md",
     "secrets/thiet-ke-second-brain-dgpnr-hoan-chinh.md",
-    "Untitled.md",
     "secrets/k3s-hybrid-architecture-spec.md",
-    "Pod in Kubernetes.md",
     "secrets/helios-hybrid-k3s-architecture-spec.md",
+    "20 Notebooks/DevOps/Kubernetes/Quản lý Cấu hình (kubectl apply vs Imperative).md",
+    "20 Notebooks/DevOps/Kubernetes/Namespaces, ResourceQuota và Phân giải DNS.md",
+    "20 Notebooks/DevOps/Kubernetes/Kubernetes Services (NodePort, ClusterIP, LoadBalancer).md",
+    "20 Notebooks/DevOps/Kubernetes/Kiến trúc K8s và Vòng đời khởi tạo Pod.md",
+    "20 Notebooks/DevOps/Kubernetes/Hệ phân cấp Workload (Pod - ReplicaSet - Deployment).md",
+    "20 Notebooks/DevOps/Kubernetes/ETCD Data Store và thao tác etcdctl.md",
+    "20 Notebooks/DevOps/Kubernetes/ETCD trong Kubernetes - Tổng quan và Cấu hình (File mẫu).md",
+    "20 Notebooks/DevOps/Kubernetes/Kiến trúc Kubernetes (Control Plane và Worker Node).md",
+    "20 Notebooks/DevOps/Kubernetes/CRI và công cụ Debug (crictl vs nerdctl).md",
+    "Images/Pasted image 20260730105617.png",
+    "Images/Pasted image 20260730132512.png",
+    "Images/Pasted image 20260730132509.png",
+    "Images/Pasted image 20260730123857.png",
+    "Images/Pasted image 20260730123855.png",
+    "Images/Pasted image 20260730122005.png",
+    "Pasted image 20260730121853.png",
+    "Images/Pasted image 20260730113042.png",
+    "Untitled.md",
+    "Pod in Kubernetes.md",
     "secrets",
-    "Images/Pasted image 20260728224050.png",
-    "Images/Pasted image 20260728223821.png",
     "Images",
     "20 Notebooks/DevOps/Kubernetes",
     "20 Notebooks/DevOps",
-    "04 - Logging and Monitoring.md",
-    "CKA Imperative Commands Cheat Sheet.md"
+    "04 - Logging and Monitoring.md"
   ]
 }

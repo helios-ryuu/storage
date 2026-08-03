@@ -1,7 +1,7 @@
 ---
 title: "Udemy: Certified Kubernetes Administrator (CKA) - Master Index"
 type: source-index
-status: in-progress
+status: completed
 instructor: Mumshad Mannambeth
 platform: Udemy
 tags:
@@ -25,7 +25,7 @@ notion_project_id: https://app.notion.com/p/helios-ryuu-main/Udemy-Certified-Kub
 > *Đánh dấu `[x]` khi hoàn thành việc xem video, thực hành lab và đã trích xuất xong Evergreen Notes cho phần đó.*
 
 - [x] [[01 - Introduction]]
-- [ ] [[02 - Core Concepts]]
+- [x] [[02 - Core Concepts]]
 - [ ] [[03 - Scheduling]]
 - [ ] [[04 - Logging & Monitoring]]
 - [ ] [[05 - Application Lifecycle Management]]
@@ -42,25 +42,3 @@ notion_project_id: https://app.notion.com/p/helios-ryuu-main/Udemy-Certified-Kub
 - [ ] [[16 - Lightning Labs]]
 - [ ] [[17 - Mock Exams]]
 - [ ] [[18 - Bonus Section]]
-
----
-
-## Trạm trung chuyển Tri thức (Hubs)
-
-> *Đây là các liên kết trỏ thẳng về thư mục `20 Notebooks/` - nơi chứa kiến thức đã được chắt lọc để phục vụ cho việc thi.*
-
-- ⚡ [[CKA Imperative Commands Cheat Sheet]] *(Tổng hợp các lệnh gõ tắt kubectl)*
-- 🐛 [[K8s Troubleshooting Master Guide]] *(Quy trình debug khi Pod/Node/Cluster chết)*
-- 📄 [[CKA YAML Templates]] *(Các mẫu YAML chuẩn bị sẵn để copy/paste)*
-
----
-
-## Nhật ký Luyện Lab (KodeKloud)
-
-> *Ghi lại số lần làm lab và điểm số để rèn luyện phản xạ (Muscle Memory).*
-
-| Tên Lab / Mock Exam | Lần 1 | Lần 2 | Lần 3 | Thời gian hoàn thành | Ghi chú lỗi sai                       |
-| :------------------ | :---: | :---: | :---: | :------------------: | :------------------------------------ |
-| Mock Exam 1         |  65%  |  90%  |   -   |       45 phút        | Sai cú pháp Ingress, quên expose port |
-| Mock Exam 2         |   -   |   -   |   -   |          -           | -                                     |
-| Lightning Lab 1     |   -   |   -   |   -   |          -           | -                                     |
