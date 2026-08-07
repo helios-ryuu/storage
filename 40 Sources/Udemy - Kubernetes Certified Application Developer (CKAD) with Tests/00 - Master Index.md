@@ -9,7 +9,7 @@ tags:
   - kubernetes
   - source-index
 created: 2026-08-02
-progress: 0/3
+progress: 6/11
 ---
 # Udemy: Kubernetes Certified Application Developer (CKAD) with Tests
 
@@ -23,6 +23,14 @@ progress: 0/3
 
 > Đánh dấu `[x]` khi đã xem video, hoàn thành lab và trích xuất ghi chú cần thiết.
 
-- [ ] [[01 - Introduction]]
-- [ ] [[02 - Core Concepts]]
-- [ ] [[03 - Configuration]]
+- [x] [[01 - Introduction]]
+- [x] [[02 - Core Concepts]]
+- [x] [[03 - Configuration]]
+- [x] [[04 - Multi-Container Pods]]
+- [x] [[05 - Observability]]
+- [x] [[06 - Pod Design]]
+- [ ] [[07 - Services & Networking]]
+- [ ] [[08 - State Persistence]]
+- [ ] [[09 - Security]]
+- [ ] [[10 - Helm Fundamentals]]
+- [ ] [[11 - Kustomize Basics]]
