@@ -129,7 +129,7 @@ kubectl logs nginx
 > The Metric Server is only an in-memory monitoring solution and does not store the metrics on the disk, and as a result, you cannot see historical performance data.
 - Kubernetes runs an agent on each node known as the kubelet, which is responsible for receiving instructions from the Kubernetes API master server, and running pods on the nodes. The kubelet also contains a subcomponent known as the cAdvisor (or Container Advisor). It is responsible for retrieving performance metrics from pods and exposing them through kubelet API to make the metrics available for the metrics server.
 ```bash
-minikune addons enable metrics-server
+minikube addons enable metrics-server
 
 git clone https://github.com/kubernetes-sigs/metrics-server.git
 kubectl create -f deploy/1.8+/

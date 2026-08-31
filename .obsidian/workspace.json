@@ -8,17 +8,15 @@
         "type": "tabs",
         "children": [
           {
-            "id": "d9e38e60c9c77f42",
+            "id": "6cd724d97e8c9c60",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "image",
               "state": {
-                "file": "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/06 - Pod Design.md",
-                "mode": "source",
-                "source": false
+                "file": "Images/Pasted image 20260831135840.png"
               },
-              "icon": "lucide-file",
-              "title": "06 - Pod Design"
+              "icon": "lucide-image",
+              "title": "Pasted image 20260831135840"
             }
           }
         ]
@@ -55,7 +53,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "affinity",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -80,7 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 333.5
+    "width": 339.5
   },
   "right": {
     "id": "63092ab4140c8493",
@@ -185,53 +183,54 @@
       "bases:Create new base": false
     }
   },
-  "active": "d9e38e60c9c77f42",
+  "active": "6d7814816d8fc340",
   "lastOpenFiles": [
-    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/07 - Services & Networking.md",
-    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/08 - State Persistence.md",
-    "Untitled.canvas",
-    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/10 - Helm Fundamentals.md",
-    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/11 - Kustomize Basics.md",
-    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/09 - Security.md",
-    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/06 - Pod Design.md",
-    "Images/Pasted image 20260804115419.png",
-    "Images/Pasted image 20260807110417.png",
-    "Pasted image 20260807105928.png",
-    "Images/Pasted image 20260807100854.png",
-    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/03 - Configuration.md",
-    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/02 - Core Concepts.md",
-    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/05 - Observability.md",
+    "Images/Pasted image 20260831135840.png",
+    "Images/Pasted image 20260831140959.png",
+    "Images/Pasted image 20260831140904.png",
+    "20 Notebooks/DevOps/Linux/ufw.md",
+    "40 Sources/YouTube - CCNA v1.1 200-301 Course/01 - Network Devices.md",
+    "40 Sources/YouTube - CCNA v1.1 200-301 Course/02 - Interfaces & Cables.md",
+    "40 Sources/YouTube - CCNA v1.1 200-301 Course/03 - TCP-IP Model.md",
+    "40 Sources/YouTube - CCNA v1.1 200-301 Course/00 - Master Index 1.md",
+    "Images/Pasted image 20260831164805.png",
+    "Images/Pasted image 20260831234426.png",
+    "Images/Pasted image 20260831233759.png",
+    "Images/Pasted image 20260831233138.png",
+    "Images/Pasted image 20260831232612.png",
+    "Images/Pasted image 20260831165720.png",
+    "Pasted image 20260831165644.png",
+    "Pasted image 20260831165638.png",
+    "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/01 - Introduction.md",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/00 - Master Index.md",
-    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/04 - Multi-Container Pods.md",
-    "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/03 - Scheduling.md",
+    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/05 - Observability.md",
+    "40 Sources/YouTube - CCNA v1.1 200-301 Course",
+    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/11 - Kustomize Basics.md",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/01 - Introduction.md",
-    "Images/Pasted image 20260805154840.png",
+    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/03 - Configuration.md",
+    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/04 - Multi-Container Pods.md",
+    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/02 - Core Concepts.md",
+    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/07 - Services & Networking.md",
+    "20 Notebooks/DevOps/Kubernetes/Namespaces, ResourceQuota và Phân giải DNS.md",
+    "20 Notebooks/DevOps/Kubernetes/Quản lý Cấu hình (kubectl apply vs Imperative).md",
+    "20 Notebooks/DevOps/Kubernetes/Kiến trúc K8s và Vòng đời khởi tạo Pod.md",
+    "20 Notebooks/DevOps/Kubernetes/CKA Imperative Commands Cheat Sheet.md",
+    "20 Notebooks/DevOps/Kubernetes/Container Runtime Interface (crictl vs nerdctl).md",
+    "20 Notebooks/DevOps/Kubernetes/ETCD Data Store và thao tác etcdctl.md",
+    "20 Notebooks/DevOps/Kubernetes/Hệ phân cấp Workload (Pod - ReplicaSet - Deployment).md",
+    "20 Notebooks/DevOps/Kubernetes/Kubernetes Services (NodePort, ClusterIP, LoadBalancer).md",
     "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/02 - Core Concepts.md",
+    "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/03 - Scheduling.md",
+    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/10 - Helm Fundamentals.md",
+    "20 Notebooks/DevOps/Linux",
+    "Untitled.canvas",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/examples/lecture-65-service-account/cleanup.sh",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/examples/lecture-65-service-account/verify-external-token.sh",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/examples/lecture-65-service-account/run-lab.sh",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/examples/lecture-65-service-account/service-account-rbac-pod.yaml",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/examples/lecture-65-service-account",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/examples",
-    "Images/Pasted image 20260804152935.png",
-    "Images/Pasted image 20260804152929.png",
-    "Images/Pasted image 20260804152928.png",
-    "Images/Pasted image 20260804152926.png",
-    "Images/Pasted image 20260804152925.png",
-    "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/01 - Introduction.md",
-    "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/00 - Master Index.md",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests",
-    "20 Notebooks/DevOps/Kubernetes/CKA Imperative Commands Cheat Sheet.md",
-    "20 Notebooks/DevOps/Kubernetes/Container Runtime Interface (crictl vs nerdctl).md",
-    "secrets/thiet-ke-second-brain-dgpnr-hoan-chinh.md",
-    "secrets/k3s-hybrid-architecture-spec.md",
-    "secrets/helios-hybrid-k3s-architecture-spec.md",
-    "20 Notebooks/DevOps/Kubernetes/Quản lý Cấu hình (kubectl apply vs Imperative).md",
-    "20 Notebooks/DevOps/Kubernetes/Namespaces, ResourceQuota và Phân giải DNS.md",
-    "20 Notebooks/DevOps/Kubernetes/Kubernetes Services (NodePort, ClusterIP, LoadBalancer).md",
-    "20 Notebooks/DevOps/Kubernetes/Kiến trúc K8s và Vòng đời khởi tạo Pod.md",
-    "secrets",
-    "Images",
-    "20 Notebooks/DevOps/Kubernetes"
+    "secrets"
   ]
 }
