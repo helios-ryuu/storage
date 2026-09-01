@@ -1,7 +1,7 @@
 ---
 title: "Udemy: Certified Kubernetes Administrator (CKA) - Master Index"
 type: source-index
-status: completed
+status: in-progress
 instructor: Mumshad Mannambeth
 platform: Udemy
 tags:

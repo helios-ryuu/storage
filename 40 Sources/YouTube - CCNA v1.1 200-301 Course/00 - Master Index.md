@@ -1,7 +1,7 @@
 ---
 title: "YouTube: CCNA v1.1 200-301 Course - Master Index"
 type: source-index
-status: completed
+status: in-progress
 instructor: Jeremy
 platform: YouTube
 tags:
@@ -9,7 +9,7 @@ tags:
   - network
   - source-index
 created: 2026-08-31
-progress: 2/63
+progress: 3/63
 ---
 # YouTube: CCNA v1.1 200-301 Course
 ## Thông tin Khóa học
@@ -20,4 +20,5 @@ progress: 2/63
 
 - [x] [[01 - Network Devices]]
 - [x] [[02 - Interfaces & Cables]]
-- [ ] [[03 - TCP-IP Model]]
+- [x] [[03 - TCP-IP Model]]
+- [ ] [[04 -  Intro to the CLI]]

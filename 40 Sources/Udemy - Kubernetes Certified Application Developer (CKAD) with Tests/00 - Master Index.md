@@ -1,7 +1,7 @@
 ---
 title: "Udemy: Kubernetes Certified Application Developer (CKAD) - Master Index"
 type: source-index
-status: completed
+status: in-progress
 instructor: Mumshad Mannambeth
 platform: Udemy
 tags:
@@ -9,7 +9,7 @@ tags:
   - kubernetes
   - source-index
 created: 2026-08-02
-progress: 6/11
+progress: 8/11
 ---
 # Udemy: Kubernetes Certified Application Developer (CKAD) with Tests
 

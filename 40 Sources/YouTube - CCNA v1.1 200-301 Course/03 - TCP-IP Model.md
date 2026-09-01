@@ -1,6 +1,6 @@
 ---
 title: "YouTube: CCNA v1.1 200-301 Course - Day 3: TCP/IP Model"
-status: in-progress
+status: completed
 tags:
   - ccna
   - youtube
@@ -71,3 +71,46 @@ tags:
 	- Transfering files (FTP, TFTP)
 	- Sending/receiving email (SMTP, POP3, IMAP)
 - Network infrastructure devices (routers, switches) don't care about Application-layer details. They just move messages across the network, only the communicating hosts interpret the data.
+## Encapsulation & Decapsulation
+### 1. Encapsulation
+![[Pasted image 20260901115128.png]]
+1. The Application layer prepares the data to be sent over the network.
+2. As the message moves down the stack, each layer encapsulates the data with a header including the information needed for that layer:
+	- Source and destination addresses (port numbers, IP addresses, MAC addresses), etc.
+	- L2 also adds a trailer that the receiving device uses to check for transmisstion errors.
+3. The Physical layer transmit the bits as signals over the physical medium.
+	- The L2 header is transmitted first, and the L2 trailer is transmitted last.
+### 2. Decapsulation
+![[Pasted image 20260901115916.png]]
+1. The receiving device receives the message as a stream of bits at L1.
+2. The device examines the information in the L2 header and trailer, and then removes them (decapsulation).
+	- The decapsulation process continues up the stack: L3 removes the L3 header, then L4 removes the L4 header, and then the data is delivered to the Application layer.
+3. The application processes the data and, if needed, generates a response that goes back down the stack.
+## Protocol data units
+![[Pasted image 20260901122158.png]]
+- At each stage in the Encapsulation/Decapsulation process, there is a name given to the message:
+	- The combination of data and a L4 header is called a segment (TCP) or datagram (UDP).
+	- The combination of a segment/datagram and a L3 header is called a packet.
+	- The combination of a packet and a L2 header/trailer is called a frame. This is what is actually sent over the wire.
+- We can use alternative names to describe the message at each stage: protocol data unit (PDU):
+	- A segment or datagram is a L4PDU.
+	- A packet is a L3PDU.
+	- A frame is a L2PDU.
+- The content of each PDU are called the payload:
+	- A segment or datagram's payload is the application data.
+	- A packet's payload is a segment or datagram.
+	- A frame's payload is a packet.
+## Adjacent-layer interaction
+![[Pasted image 20260901123829.png]]
+- Each layer provides a service to the layer above it, and is serviced by the layer below it (adjacent-layer interaction): 
+	- Layer 4 provides a service to Layer 5 by delivering data to the correct application using port numbers.  
+	- Layer 3 provides a service to Layer 4 by delivering segments/datagrams to the correct destination host using IP addresses.  
+	- Layer 2 provides a service to Layer 3 by delivering packets to the next hop using MAC addresses.  
+	- Layer 1 provides a service to Layer 2 by sending and receiving frames as electrical, optical, or radio signals.
+- Each layer communicates with the same layer on other devices (same-layer interaction):
+	- The Application layer on one host sends data to the Application layer on the other host.  
+	- A segment/datagram is addressed to the Layer 4 port number of the correct application on the destination host.  
+	- A packet is addressed to the Layer 3 IP address of the destination host.  
+	- A frame is addressed to the Layer 2 MAC address of the next hop.  
+	- Signals sent out of a physical port are received by a physical port on the connected device.
+- The layer are modular, we can swap protocols at one layer without changing the others.

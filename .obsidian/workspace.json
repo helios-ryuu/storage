@@ -11,12 +11,14 @@
             "id": "6cd724d97e8c9c60",
             "type": "leaf",
             "state": {
-              "type": "image",
+              "type": "markdown",
               "state": {
-                "file": "Images/Pasted image 20260831135840.png"
+                "file": "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/00 - Master Index.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-image",
-              "title": "Pasted image 20260831135840"
+              "icon": "lucide-file",
+              "title": "00 - Master Index"
             }
           }
         ]
@@ -183,26 +185,27 @@
       "bases:Create new base": false
     }
   },
-  "active": "6d7814816d8fc340",
+  "active": "6cd724d97e8c9c60",
   "lastOpenFiles": [
+    "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/00 - Master Index.md",
+    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/00 - Master Index.md",
+    "40 Sources/YouTube - CCNA v1.1 200-301 Course/00 - Master Index.md",
+    "40 Sources/YouTube - CCNA v1.1 200-301 Course/04 -  Intro to the CLI.md",
+    "Images/Pasted image 20260901115128.png",
+    "40 Sources/YouTube - CCNA v1.1 200-301 Course/03 - TCP-IP Model.md",
+    "40 Sources/YouTube - CCNA v1.1 200-301 Course/02 - Interfaces & Cables.md",
+    "Images/Pasted image 20260901123829.png",
+    "Images/Pasted image 20260901122158.png",
+    "Images/Pasted image 20260901115916.png",
     "Images/Pasted image 20260831135840.png",
+    "20 Notebooks/DevOps/Linux/ufw.md",
     "Images/Pasted image 20260831140959.png",
     "Images/Pasted image 20260831140904.png",
-    "20 Notebooks/DevOps/Linux/ufw.md",
     "40 Sources/YouTube - CCNA v1.1 200-301 Course/01 - Network Devices.md",
-    "40 Sources/YouTube - CCNA v1.1 200-301 Course/02 - Interfaces & Cables.md",
-    "40 Sources/YouTube - CCNA v1.1 200-301 Course/03 - TCP-IP Model.md",
-    "40 Sources/YouTube - CCNA v1.1 200-301 Course/00 - Master Index 1.md",
     "Images/Pasted image 20260831164805.png",
     "Images/Pasted image 20260831234426.png",
     "Images/Pasted image 20260831233759.png",
-    "Images/Pasted image 20260831233138.png",
-    "Images/Pasted image 20260831232612.png",
-    "Images/Pasted image 20260831165720.png",
-    "Pasted image 20260831165644.png",
-    "Pasted image 20260831165638.png",
     "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/01 - Introduction.md",
-    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/00 - Master Index.md",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/05 - Observability.md",
     "40 Sources/YouTube - CCNA v1.1 200-301 Course",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/11 - Kustomize Basics.md",
@@ -221,7 +224,6 @@
     "20 Notebooks/DevOps/Kubernetes/Kubernetes Services (NodePort, ClusterIP, LoadBalancer).md",
     "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/02 - Core Concepts.md",
     "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/03 - Scheduling.md",
-    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/10 - Helm Fundamentals.md",
     "20 Notebooks/DevOps/Linux",
     "Untitled.canvas",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/examples/lecture-65-service-account/cleanup.sh",
