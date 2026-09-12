@@ -9,7 +9,7 @@ tags:
   - network
   - source-index
 created: 2026-08-31
-progress: 3/63
+progress: 4/63
 ---
 # YouTube: CCNA v1.1 200-301 Course
 ## Thông tin Khóa học
@@ -21,4 +21,5 @@ progress: 3/63
 - [x] [[01 - Network Devices]]
 - [x] [[02 - Interfaces & Cables]]
 - [x] [[03 - TCP-IP Model]]
-- [ ] [[04 -  Intro to the CLI]]
+- [x] [[04 -  Intro to the CLI]]
+- [ ] [[05 - Ethernet LAN Switching (Part 1)]]
