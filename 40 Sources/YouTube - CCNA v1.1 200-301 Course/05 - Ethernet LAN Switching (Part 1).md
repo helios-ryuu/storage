@@ -1,6 +1,6 @@
 ---
 title: "YouTube: CCNA v1.1 200-301 Course - Day 5: Ethernet LAN Switching (Part 1)"
-status: in-progress
+status: completed
 tags:
   - ccna
   - youtube
@@ -9,7 +9,7 @@ tags:
 ## OSI Model - Physical Layer
 - Physical Layer (L1) defines physical characteristics of the medium used to transfer data between devices. For example:
 	- Voltage levels
-	- Maximun transmission distances
+	- Maximum transmission distances
 	- Physical connectors
 	- Cable specifications
 	- ...
@@ -64,4 +64,6 @@ tags:
 - The first 3 bytes are the OUI (Organizationally Unique Indentifer), which is assigned to the company making the device
 - The last 3 bytes are unique to the device itself
 - Written as 12 hexadecimal characters
-- Unicast frame: a frame destined for a single target. There are other kinds of frame like broadcast frame. After the switch received the frame, it look out the source MAC address field of the frame and then used that information to learn where the sender is
+- Unicast frame: a frame destined for a single target. There are other kinds of frame like broadcast frame. After the switch received the frame, it look out the source MAC address field of the frame and then used that information to learn where the sender is.
+- When the switch receives an Unknown Unicast frame, because the switch doesn't know how to reach the destination, it has only one option is to flood the frame, meaning to forward the frame out of all of its interfaces, except the one it received.
+- Dynamic MAC addresses are removed from the MAC address table after 5 minutes of inactivity.

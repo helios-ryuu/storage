@@ -267,7 +267,9 @@ All hands-on labs are hosted on KodeKloud. Use this link to register for the lab
 kubectl run nginx --image=nginx
 kubectl delete pod webapp
 kubectl get pods -o wide
-kubectl run redis --image=redis123 --dry-run=client -0 yaml
+kubectl run redis --image=redis123 --dry-run=client -o yaml
+kubectl set image po nginx nginx=nginx:1.24.0
+kubectl run busybox --image busybox -rm -it -- wget -O- 10.42.1.7
 ```
 ## Lecture 26: Recap - ReplicaSets
 - The Replication Controller helps us run multiple instances of a single pod in the Kubernetes cluster, thus providing High Availability. It helps us balance the load across multiple pods on different nodes, as well as scale our application when the demand increases.
@@ -418,23 +420,14 @@ Reference (Bookmark this page for exam. It will be very handy):
 `kubectl create deployment --image=nginx nginx --replicas=4 --dry-run=client -o yaml > nginx-deployment.yaml`
 
 ```bash
-# 1. Cấu hình Vim
-cat <<EOF > ~/.vimrc
-set tabstop=2
-set shiftwidth=2
-set expandtab
-set number
-set smartindent
-EOF
-
-# 2. Cấu hình Alias & Autocomplete vào ~/.bashrc
-cat <<EOF >> ~/.bashrc
+# 1. Cấu hình Alias vào ~/.bashrc
+cat << 'EOF' >> ~/.bashrc
 alias k='kubectl'
 export do="--dry-run=client -o yaml"
 export force="--force --grace-period=0"
 EOF
 
-# 3. Kích hoạt môi trường
+# 2. Kích hoạt môi trường
 source ~/.bashrc
 ```
 ## Lecture 31 & 32: Labs - Deployment

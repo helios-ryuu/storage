@@ -633,6 +633,7 @@ spec:
     requests.memory: "2Gi"
     limits.cpu: 6
     limits.memory: "4Gi"
+    pods: "2"
 ```
 ## Lecture 63 & 64: Lab - Resource Requirements
 ## Lecture 65: Service Account

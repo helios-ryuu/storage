@@ -320,7 +320,7 @@ spec:
 ```
 ## Lecture 109 & 110: Lab - Jobs & CronJobs
 ```bash
-ubectl create cronjob throw-dice-cron-job \
+kubectl create cronjob throw-dice-cron-job \
   --schedule="30 21 * * *" \
   --image=kodekloud/throw-dice
 ```

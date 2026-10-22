@@ -22,4 +22,7 @@ progress: 4/63
 - [x] [[02 - Interfaces & Cables]]
 - [x] [[03 - TCP-IP Model]]
 - [x] [[04 -  Intro to the CLI]]
-- [ ] [[05 - Ethernet LAN Switching (Part 1)]]
+- [x] [[05 - Ethernet LAN Switching (Part 1)]]
+- [x] [[06 - Ethernet LAN Switching (Part 2)]]
+- [x] [[07 - IPv4 Addressing (Part 1)]]
+- [x] [[08 - IPv4 Addressing (Part 2)]]
