@@ -390,7 +390,7 @@ kubectl convert -f old-ingress.yaml --output-version networking.k8s.io/v1 > new-
 ![[Pasted image 20261019190754.png]]
 - First, we have to first define what that resource is that we want to create. But for that we need what is known as a custom resource definition or CRD. We're going to use CRD to tell Kubernetes that we would like to create objects of custom kind.
 ```yaml
-apiVersion: apiextension.k8s.io/v1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: flighttickets.flights.com

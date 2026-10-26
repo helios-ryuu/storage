@@ -34,3 +34,4 @@ progress: 8/11
 - [x] [[09 - Security]]
 - [x] [[10 - Helm Fundamentals]]
 - [x] [[11 - Kustomize Basics]]
+- [x] 12 - Tips

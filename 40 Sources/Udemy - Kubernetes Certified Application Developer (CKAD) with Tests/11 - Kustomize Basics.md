@@ -364,7 +364,7 @@ patches:
     kind: Deployment
     name: api-deployment
   patch: |-
-  - op: replace
+  - op: add
     path: /spec/template/spec/containers/- # Last index of the list, or where you want to add
       value:
         name: haproxy

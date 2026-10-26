@@ -13,15 +13,30 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Secrets/helios-hybrid-k3s-architecture-spec.md",
+                "file": "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/09 - Security.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "helios-hybrid-k3s-architecture-spec"
+              "title": "09 - Security"
+            }
+          },
+          {
+            "id": "126f273f31e6a7c8",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "20 Notebooks/DevOps/Kubernetes/CKAD Cheat Sheet (Part 1 - Core Concepts & Configuration).md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "CKAD Cheat Sheet (Part 1 - Core Concepts & Configuration)"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -55,7 +70,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "tag:source-note",
+                "query": "",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -80,7 +95,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 393.5
+    "width": 532.5
   },
   "right": {
     "id": "63092ab4140c8493",
@@ -185,44 +200,44 @@
       "bases:Create new base": false
     }
   },
-  "active": "6d7814816d8fc340",
+  "active": "126f273f31e6a7c8",
   "lastOpenFiles": [
-    "Images/Pasted image 20261008131743.png",
-    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/00 - Master Index.md",
+    "20 Notebooks/DevOps/Kubernetes/CKAD Cheat Sheet (Part 3 - Pod Design & Services & Networking).md",
+    "20 Notebooks/DevOps/Kubernetes/CKAD Cheat Sheet (Part 2 - Multi-Container Pods & Observability).md",
+    "20 Notebooks/DevOps/Kubernetes/CKAD Cheat Sheet (Part 1 - Core Concepts & Configuration).md",
+    "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/02 - Core Concepts.md",
+    "20 Notebooks/DevOps/Kubernetes/CKAD Cheat Sheet (Part 4 - State Persistence & Security).md",
+    "20 Notebooks/DevOps/Kubernetes/CKAD Cheat Sheet (Part 5 - Helm & Kustomize).md",
+    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/12 - Tips.md",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/11 - Kustomize Basics.md",
-    "Images/Pasted image 20261021235312.png",
-    "Images/Pasted image 20261021235134.png",
-    "Images/Pasted image 20261021234959.png",
-    "40 Sources/YouTube - CCNA v1.1 200-301 Course/09 - Switch Interfaces.md",
-    "40 Sources/YouTube - CCNA v1.1 200-301 Course/05 - Ethernet LAN Switching (Part 1).md",
-    "40 Sources/YouTube - CCNA v1.1 200-301 Course/06 - Ethernet LAN Switching (Part 2).md",
-    "40 Sources/YouTube - CCNA v1.1 200-301 Course/07 - IPv4 Addressing (Part 1).md",
-    "40 Sources/YouTube - CCNA v1.1 200-301 Course/08 - IPv4 Addressing (Part 2).md",
-    "Images/Pasted image 20261020215226.png",
-    "Images/Pasted image 20261020214924.png",
-    "Images/Pasted image 20261020214922.png",
-    "Images/Pasted image 20261020214525.png",
-    "Images/Pasted image 20261020165107.png",
-    "Images/Pasted image 20261020164858.png",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/10 - Helm Fundamentals.md",
-    "Images/Pasted image 20261020120847.png",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/09 - Security.md",
+    "20 Notebooks/DevOps/Kubernetes/Container Runtime Interface (crictl vs nerdctl).md",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/08 - State Persistence.md",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/07 - Services & Networking.md",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/06 - Pod Design.md",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/05 - Observability.md",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/04 - Multi-Container Pods.md",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/03 - Configuration.md",
-    "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/02 - Core Concepts.md",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/02 - Core Concepts.md",
-    "20 Notebooks/DevOps/Kubernetes/Namespaces, ResourceQuota và Phân giải DNS.md",
     "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/01 - Introduction.md",
+    "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/03 - Scheduling.md",
     "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/01 - Introduction.md",
-    "40 Sources/YouTube - CCNA v1.1 200-301 Course/00 - Master Index.md",
-    "40 Sources/YouTube - CCNA v1.1 200-301 Course/01 - Network Devices.md",
-    "40 Sources/YouTube - CCNA v1.1 200-301 Course/04 -  Intro to the CLI.md",
-    "Untitled.md",
-    "40 Sources/YouTube - CCNA v1.1 200-301 Course/03 - TCP-IP Model.md",
+    "40 Sources/Udemy - Kubernetes Certified Administrator (CKA) with Tests/00 - Master Index.md",
+    "Pasted image 20261025162830.png",
+    "40 Sources/Udemy - Kubernetes Certified Application Developer (CKAD) with Tests/00 - Master Index.md",
+    "20 Notebooks/DevOps/Kubernetes/Quản lý Cấu hình (kubectl apply vs Imperative).md",
+    "20 Notebooks/DevOps/Kubernetes/Namespaces, ResourceQuota và Phân giải DNS.md",
+    "20 Notebooks/DevOps/Kubernetes/Kubernetes Services (NodePort, ClusterIP, LoadBalancer).md",
+    "Images/Pasted image 20261008131743.png",
+    "Images/Pasted image 20261021235312.png",
+    "Images/Pasted image 20261021235134.png",
+    "Images/Pasted image 20261021234959.png",
+    "Images/Pasted image 20261020215226.png",
+    "Images/Pasted image 20261020214924.png",
+    "Images/Pasted image 20261020214922.png",
+    "Images/Pasted image 20261020214525.png",
+    "Images/Pasted image 20261020165107.png",
     "40 Sources/YouTube - CCNA v1.1 200-301 Course",
     "20 Notebooks/DevOps/Linux",
     "Untitled.canvas",

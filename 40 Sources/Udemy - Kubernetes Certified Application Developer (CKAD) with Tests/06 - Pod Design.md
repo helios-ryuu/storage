@@ -275,12 +275,12 @@ Khi bạn kết hợp cả **`restartPolicy: OnFailure`** và **`backoffLimit`**
 4. **Kết cục khi đạt giới hạn:** Nếu số lần container bị restart đạt tới giá trị `backoffLimit` (ví dụ: $6$ lần) mà vẫn tiếp tục lỗi, Job Controller sẽ đánh dấu toàn bộ **Job là Failed**, dừng vòng lặp restart và ngừng xử lý.
 ### Bảng so sánh: `OnFailure` vs `Never` (Khi đi cùng `backoffLimit`)
 
-|**Tiêu chí**|**restartPolicy: OnFailure**|**restartPolicy: Never**|
-|---|---|---|
-|**Hành vi khi Container lỗi**|Restart lại container **ngay trong Pod đó**.|Hủy bỏ Pod cũ, **tạo một Pod hoàn toàn mới**.|
-|**Tài nguyên Pod (IP, Logs)**|IP giữ nguyên. **Logs của container cũ sẽ bị ghi đè** (chỉ xem được log gần nhất hoặc dùng `kubectl logs -p`).|Mỗi lần retry tạo 1 Pod mới. **Giữ nguyên log của tất cả các Pod bị lỗi** để debug.|
-|**Số lượng Pod tạo ra**|Duy nhất **1 Pod** (trừ khi Node chết).|Tạo tối đa **`backoffLimit + 1` Pods**.|
-|**Đếm `backoffLimit`**|Đếm số lần **Container Restart** trong Pod.|Đếm số lần **Pod bị lỗi/bị xóa**.|
+| **Tiêu chí**                  | **restartPolicy: OnFailure**                                                                                   | **restartPolicy: Never**                                                            |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **Hành vi khi Container lỗi** | Restart lại container **ngay trong Pod đó**.                                                                   | Hủy bỏ Pod cũ, **tạo một Pod hoàn toàn mới**.                                       |
+| **Tài nguyên Pod (IP, Logs)** | IP giữ nguyên. **Logs của container cũ sẽ bị ghi đè** (chỉ xem được log gần nhất hoặc dùng `kubectl logs -p`). | Mỗi lần retry tạo 1 Pod mới. **Giữ nguyên log của tất cả các Pod bị lỗi** để debug. |
+| **Số lượng Pod tạo ra**       | Duy nhất **1 Pod** (trừ khi Node chết).                                                                        | Tạo tối đa **`backoffLimit + 1` Pods**.                                             |
+| **Đếm `backoffLimit`**        | Đếm số lần **Container Restart** trong Pod.                                                                    | Đếm số lần **Pod bị lỗi/bị xóa**.                                                   |
 
 - **Khi nào NÊN dùng `OnFailure` + `backoffLimit`:** Cấu hình này cực kỳ phù hợp cho các tác vụ mang tính chất **Idempotent** (thực hiện lại nhiều lần không gây sai lệch dữ liệu) và có chi phí khởi tạo Pod đắt đỏ (ví dụ: Pod cần mount khối lượng lớn Storage Volume, pull image nặng, hoặc mất nhiều thời gian setup môi trường ban đầu). Việc khởi động lại container tại chỗ sẽ tiết kiệm thời gian và tài nguyên Cluster hơn nhiều so với việc tốn công tạo Pod mới.
     
@@ -289,12 +289,12 @@ Khi bạn kết hợp cả **`restartPolicy: OnFailure`** và **`backoffLimit`**
 - A CronJob is a job that can be scheduled just like Crontab in Linux.
 ![[Pasted image 20260807110417.png]]
 
-|**Tiêu chí**|***/1 * * * ***|**1 * * * ***|
-|---|---|---|
-|**Tần suất thực thi**|$1$ phút / lần|$1$ giờ / lần|
-|**Số lần chạy trong ngày**|$1440$ lần|$24$ lần|
-|**Các mốc chạy ví dụ**|`10:00`, `10:01`, `10:02`, `10:03`,...|`10:01`, `11:01`, `12:01`, `13:01`,...|
-|**Trường hợp sử dụng phù hợp**|Health check service, heartbeat, polling queue liên tục.|Báo cáo theo giờ, sync cache định kỳ, dọn dẹp log tạm ngắn hạn.|
+| **Tiêu chí**                   | ***/1 * * * ***                                          | **1 * * * ***                                                   |
+| ------------------------------ | -------------------------------------------------------- | --------------------------------------------------------------- |
+| **Tần suất thực thi**          | $1$ phút / lần                                           | $1$ giờ / lần                                                   |
+| **Số lần chạy trong ngày**     | $1440$ lần                                               | $24$ lần                                                        |
+| **Các mốc chạy ví dụ**         | `10:00`, `10:01`, `10:02`, `10:03`,...                   | `10:01`, `11:01`, `12:01`, `13:01`,...                          |
+| **Trường hợp sử dụng phù hợp** | Health check service, heartbeat, polling queue liên tục. | Báo cáo theo giờ, sync cache định kỳ, dọn dẹp log tạm ngắn hạn. |
 
 ```yaml
 apiVersion: batch/v1

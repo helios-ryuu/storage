@@ -45,7 +45,7 @@ spec:
         port: 80
       initialDelaySeconds: 5 # Default is 0
       failureThreshold: 5 # Default is 3
-      successThreshol: 2 # Default is 1
+      successThreshold: 2 # Default is 1
       periodSeconds: 3 # Default is 10
       timeoutSeconds: 2 # Default is 1
 ```

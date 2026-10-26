@@ -629,9 +629,9 @@ metadata:
   name: my-resource-quota
 spec:
   hard:
-    requests.cpu: 4
+    requests.cpu: "4"
     requests.memory: "2Gi"
-    limits.cpu: 6
+    limits.cpu: "6"
     limits.memory: "4Gi"
     pods: "2"
 ```
@@ -783,7 +783,7 @@ spec:
 - The `taint-effect`defines what would happen to the pods if they do not tolerate the taint. There are 3 taint effect:
 	- NoSchedule: The pods will not be scheduled on the node.
 	- PreferNoSchedule: The system will try to avoid placing a pod on the node, but that is not guaranteed.
-	- NoExecute: New pods will not be scheduled on the node and existing pods on the node, if any will be evicted if they do not tolerate the taint. These pods may have been scheduled on the node before the taint was applied to the node.
+	- NoExecute: New pods will not be scheduled on the node and existing pods on the node if any will be evicted if they do not tolerate the taint. These pods may have been scheduled on the node before the taint was applied to the node.
 ```bash
 kubectl taint nodes mynode app=nginx:NoSchedule
 ```
@@ -799,7 +799,7 @@ spec:
     name: nginx-app
   tolerations:
   - key: "app"
-    operator: "equal"
+    operator: "Equal"
     value: "nginx"
     effect: "NoSchedule"
 ```

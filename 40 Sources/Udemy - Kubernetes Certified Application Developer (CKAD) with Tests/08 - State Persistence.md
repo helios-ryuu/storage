@@ -342,6 +342,7 @@ metadata:
     app: postgres-h
   name: postgres-h
 spec:
+  clusterIP: None
   ports:
   - name: 5432-5432
     port: 5432
