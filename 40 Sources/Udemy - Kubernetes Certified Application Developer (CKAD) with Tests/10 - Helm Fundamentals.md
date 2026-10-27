@@ -10,42 +10,48 @@ tags:
 ---
 # Section 10: Helm Fundamentals
 
-## Lecture 167: Helm Introduction
-- It's sometimes called a package manager for Kubernetes.
-- It looks at those objects as part of a big package as a group, whenever we need to perform an action we don't tell Helm the objects it should touch. We just tell it what package we want it to act on.
-- And based on the package name, it then knows what objects it should change and how. And even if there are hundreds of objects that belong to that package.
-- We can customize the settings we want for our app or package by specifying desired values at install time. But instead of having to edit multiple files in multiple YAML files, we have a single location where we can declare every custom setting. It's called a value.yaml file, and this is where we can change the size of our persistent volumes, choose the name of our WordPress website, the admin password, settings for the database engine and so on.
-- We can upgrade our application with a single command. Helm will know what individual objects need to change to make this happen. We can roll back to the previous so-called revision. We use a single command to uninstall our app. It keeps track of all the objects used by each app, so it knows what to remove. We don't need to remember each object that belongs to one of our apps anymore or use 10 separate commands to remove everything. Helm does all the work.
-![[Pasted image 20261019222808.png]]
-## Lecture 168: Install Helm
-- Before installing Helm, you must first have:
-	- A functional Kubernetes cluster
-	- The kubectl utility installed and configured on your local computer with the right credentials or login details set-up in the kubeconfig file to work with the intended Kubernetes cluster.
-- Using snap:
-```bash
-sudo snap install Helm
-```
-> [!info] --classic parameter
-> Use the classic parameter while installing to install a more relaxed sandbox that gives the app a bit more access to the host system, rather than strictly isolating it to its separate environment. This way, Helm can easily access the kubeconfig file in our home directory. So it knows how to connect to our Kubernetes cluster:
-> ```bash
-> sudo snap install Helm --classic
-> ```
+> **Phân loại trọng tâm trong Section 10:**
+> - 🎯 **[CÓ THI CKAD — Trọng tâm]:** Quản lý Helm Repo (`repo add/list/update`, `search repo`), kiểm tra/tải Chart (`show values`, `pull --untar`), cài đặt/nâng cấp/quay lui/gỡ bỏ Release (`install`, `upgrade`, `rollback`, `uninstall`, `list -a -A`) và tùy biến thông số qua `values.yaml` hoặc `--set` (`Lecture 171–173`).
+> - 💡 **[NGOÀI ĐỀ THI — Đáng biết]:** Cấu trúc bên trong một Helm Chart (`Chart.yaml`, `values.yaml`, `templates/`) và cú pháp Go Template `{{ .Values.xyz }}` (khi thi bạn dùng Chart có sẵn hoặc sửa `values.yaml`, không bắt viết Chart mới từ con số 0).
+> - 👀 **[XEM QUA — Không cần tập trung]:** Cài đặt công cụ `helm` bằng `snap`/`apt` (`Lecture 168–170`) — trong phòng thi `helm` đã được cài sẵn trên máy trạm.
 
-- For other systems: https://helm.sh/docs/intro/install/
-## Lecture 169 & 170: Lab - Install Helm
+## Lecture 167: Helm Introduction — 🎯 [CÓ THI CKAD]
+- **Vấn đề khi không dùng Helm:** Để triển khai một ứng dụng hoàn chỉnh (như WordPress hay E-commerce), bạn phải viết và quản lý rời rạc hàng chục file YAML (`Deployment`, `Service`, `Secret`, `PVC`, `Ingress`...). Khi muốn đổi một thông số, nâng cấp hay gỡ bỏ ứng dụng, việc sửa thủ công từng file rất dễ sót và lỗi.
+- **Giải pháp của Helm (Package Manager cho Kubernetes):**
+  - Helm coi toàn bộ các đối tượng Kubernetes cấu thành nên một ứng dụng là một gói duy nhất (**Package / Helm Chart**).
+  - Bạn chỉ cần khai báo các thông số muốn tùy biến tại một nơi duy nhất là file **`values.yaml`** (VD: dung lượng đĩa, mật khẩu admin, tag image).
+  - Chỉ với 1 câu lệnh duy nhất, Helm tự biết phải tạo mới (`install`), cập nhật những object nào (`upgrade`), khôi phục lại phiên bản trước (`rollback`), hoặc dọn dẹp sạch sẽ toàn bộ ứng dụng (`uninstall`).
+![[Pasted image 20261019222808.png]]
+
+## Lecture 168, 169 & 170: Install Helm & Labs — 👀 [XEM QUA]
+- **Điều kiện tiên quyết trước khi cài Helm:**
+  1. Đã có một cụm Kubernetes hoạt động.
+  2. Đã cài `kubectl` và cấu hình sẵn thông tin kết nối/xác thực trong `~/.kube/config` (Helm sử dụng chính file `kubeconfig` này để giao tiếp với Cluster).
+- **Lệnh cài đặt trên Linux:**
 ```bash
+# Cài qua Snap (Bắt buộc thêm --classic để Helm không bị cô lập sandbox và đọc được ~/.kube/config)
+sudo snap install helm --classic
+
+# Kiểm tra hệ điều hành trên máy Lab
 cat /etc/os-release
-cat /etc/*release*
 ```
-## Lecture 171: Helm Concepts
-- Now we know that some of yaml files have values that might change. So the first step is to convert these files into templates where these values become variables. The two curly braces indicates that these are variables and that the values specified within our variable names which will be used to fetch these values from another place. These values are stored in a file named values.yaml.
+- Tài liệu cài đặt cho các hệ điều hành khác: [https://helm.sh/docs/intro/install/](https://helm.sh/docs/intro/install/)
+
+## Lecture 171, 172 & 173: Helm Concepts & Lifecycle CLI — 🎯 [CÓ THI CKAD]
+### 1. Cấu tạo bên trong một Helm Chart — 💡 [NGOÀI ĐỀ THI — Đáng biết]
+- Một **Helm Chart** là sự kết hợp giữa:
+  1. **Thư mục `templates/`:** Chứa các file YAML Kubernetes đã được biến thành khuôn mẫu động bằng cú pháp hai dấu ngoặc nhọn **`{{ .Values.<tên-biến> }}`**.
+  2. **File `values.yaml`:** Chứa các giá trị mặc định để điền vào các biến trong `templates/`.
+  3. **File `Chart.yaml`:** Chứa thông tin định danh của chính gói Chart đó.
+
 ```yaml
+# Ví dụ file templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: nginx
   labels:
     app: nginx
-  name: nginx
 spec:
   replicas: 3
   selector:
@@ -57,70 +63,69 @@ spec:
         app: nginx
     spec:
       containers:
-      - image: {{ .Values.image }}
-        name: nginx
+      - name: nginx
+        image: {{ .Values.image }}
 ```
-
 ```yaml
+# Ví dụ file values.yaml
 image: nginx:1.1.2
 storage: 20Gi
 ```
-- So a combination of templates plus values.yaml gives us the final version of definition files that can be used to deploy the application on the Kubernetes cluster. Together the templates and the values file forms a *Helm chart*.
-- It also has a Chart.yaml file that has information about the chart itself, such as the name of the chart, the charts version, a description of what the chart is, some keywords associated with the application and information about the maintainers.
+
+- **Các trường quan trọng trong file `Chart.yaml`:**
 ```yaml
-apiVersion: The chart API version (required)
-name: The name of the chart (required)
-version: The version of the chart (required)
-kubeVersion: A SemVer range of compatible Kubernetes versions (optional)
-description: A single-sentence description of this project (optional)
-type: The type of the chart (optional)
-keywords:
-  - A list of keywords about this project (optional)
-home: The URL of this projects home page (optional)
-sources:
-  - A list of URLs to source code for this project (optional)
-dependencies: # A list of the chart requirements (optional)
-  - name: The name of the chart (nginx)
-    version: The version of the chart ("1.2.3")
-    repository: (optional) The repository URL ("https://example.com/charts") or alias ("@repo-name")
-    condition: (optional) A yaml path that resolves to a boolean, used for enabling/disabling charts (e.g. subchart1.enabled )
-    tags: # (optional)
-      - Tags can be used to group charts for enabling/disabling together
-    import-values: # (optional)
-      - ImportValues holds the mapping of source values to parent key to be imported. Each item can be a string or pair of child/parent sublist items.
-    alias: (optional) Alias to be used for the chart. Useful when you have to add the same chart multiple times
-maintainers: # (optional)
-  - name: The maintainers name (required for each maintainer)
-    email: The maintainers email (optional for each maintainer)
-    url: A URL for the maintainer (optional for each maintainer)
-icon: A URL to an SVG or PNG image to be used as an icon (optional).
-appVersion: The version of the app that this contains (optional). Needn't be SemVer. Quotes recommended.
-deprecated: Whether this chart is deprecated (optional, boolean)
-annotations:
-  example: A list of annotations keyed by name (optional).
+apiVersion: v2                  # Phiên bản API của Chart (Bắt buộc: v2 dùng cho Helm 3)
+name: my-nginx-chart            # Tên của Chart (Bắt buộc)
+version: 1.2.0                  # Phiên bản của GÓI CHART (Bắt buộc — tuân theo SemVer)
+appVersion: "1.25.3"            # Phiên bản của ỨNG DỤNG thực tế bên trong container (Tùy chọn)
+kubeVersion: ">= 1.20.0"        # Phạm vi phiên bản Kubernetes tương thích (Tùy chọn)
+description: Mô tả ngắn về Chart (Tùy chọn)
+type: application               # Loại chart: application hoặc library (Tùy chọn)
+keywords: ["web", "nginx"]      # Từ khóa tìm kiếm (Tùy chọn)
+home: https://example.com       # Trang chủ dự án (Tùy chọn)
+sources:                        # Danh sách URL mã nguồn (Tùy chọn)
+  - https://github.com/example/nginx
+dependencies:                   # Danh sách các sub-charts phụ thuộc (Tùy chọn)
+  - name: mariadb
+    version: "11.0.0"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: mariadb.enabled  # Biến boolean trong values.yaml để bật/tắt subchart
+maintainers:                    # Thông tin người duy trì (Tùy chọn)
+  - name: helios
+    email: helios@example.com
+icon: https://example.com/icon.svg
+deprecated: false
 ```
-- You an either search Helm charts using this web interface or you can search using the command `helm search hub <chart-name>`.
-- The artifact hub is the community driven chart repositorybut there are other repositories as well such as the bitami Helm repository.
-- To search for charts in other repositories you must first add a repository to your local helm setup. For this run the command `helm repo add bitami <URL>`.
-- Search the repository using the `helm search repo <repo-name>` command instead of the search hub command.
-- You can list existing repos using the `helm repo list` command.
-- Once you find the chart, the next step is to install the chart on your cluster. For this run, the `helm install` command followed by a release name and the chart name. When this command is run the Helm chart package is downloaded from the repository and extracted and installed locally. So each installation of a chart is called a release and each release has a release name.
+
+### 2. Quản lý Repository, Tìm kiếm & Vòng đời Release — 🎯 [CÓ THI CKAD]
+- **Khái niệm `Release`:** Mỗi lần bạn cài đặt một Chart lên Cluster, Helm tạo ra một bản thể độc lập gọi là một **Release** (gắn với một `Release Name` riêng). Nhờ đó bạn có thể cài cùng một Chart `bitnami/wordpress` nhiều lần trên cùng một Cluster (`release-1`, `release-2`, `release-3`) mà không bị đụng độ tên tài nguyên.
+
 ```bash
-helm install release-1 bitami/wordpress
-helm install release-2 bitami/wordpress
-helm install release-3 bitami/wordpress
+# 1. Tìm kiếm trên Artifact Hub (Kho cộng đồng chung)
+helm search hub wordpress
 
-# List installed packages
-helm list
+# 2. Thêm, liệt kê, cập nhật và tìm kiếm trên một Repository cụ thể (như Bitnami)
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo list
+helm repo update
+helm search repo bitnami/wordpress
+helm search repo bitnami/wordpress -l   # Cờ -l (--versions): Hiển thị tất cả các phiên bản cũ/mới
 
-# Uninstall packages
-helm uninstall <my-release>
+# 3. Xem trước thông số values.yaml hoặc tải gói Chart về giải nén ra thư mục local
+helm show values bitnami/wordpress > default-values.yaml
+helm pull --untar bitnami/wordpress     # Tải về và giải nén thành thư mục ./wordpress
+ls wordpress/
 
-# Dowmloan packages but don't install it
-helm pull --untar bitami/wordpress
-ls wordpress
-# And install it
-helm install release-4  ./wordpress
+# 4. Cài đặt (Install) Chart lên Cluster
+helm install release-1 bitnami/wordpress -n web --create-namespace
+helm install release-2 bitnami/wordpress --set replicaCount=2 -f custom-values.yaml
+helm install release-4 ./wordpress      # Cài đặt trực tiếp từ thư mục Chart đã giải nén trên máy
+
+# 5. Liệt kê, Nâng cấp (Upgrade), Rollback và Gỡ cài đặt (Uninstall)
+helm list                               # Liệt kê các release trong namespace hiện tại
+helm list -a -A                         # Liệt kê mọi release (kể cả failed/pending) trên toàn bộ namespaces
+helm upgrade release-1 bitnami/wordpress --set replicaCount=3
+helm history release-1
+helm rollback release-1 1
+helm uninstall release-1
 ```
-## Lecture 172 & 173: Lab - Helm Concepts
-None

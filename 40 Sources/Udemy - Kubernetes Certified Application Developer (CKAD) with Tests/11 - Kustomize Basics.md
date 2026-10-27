@@ -10,97 +10,76 @@ tags:
 ---
 # Section 11: Kustomize Basics
 
-## Lecture 174: Kustomize Problem Statement & ideology
-- So the way that Kustomize handles scalable solution is that Kustomize has two key terms that you have to understand:
-	- Base, or base config: represents config that's going to be identical across all of your environments. So any resources or configs that you know will be the same across all your environments you put it in your base config. It also represents default values.
-	- Overlays: allow us to customize the behavior on a per-environment basis.
+> **Phân loại trọng tâm trong Section 11:**
+> - 🎯 **[CÓ THI CKAD — Trọng tâm]:** Cấu trúc file `kustomization.yaml`, các lệnh thực thi (`kubectl kustomize`, `kubectl apply -k`, `kubectl delete -k`), thiết kế thư mục `Base` & `Overlays`, sử dụng `Common Transformers` (`namespace`, `namePrefix`/`nameSuffix`, `labels`/`commonLabels`, `commonAnnotations`), `Image Transformers` (`images`), và viết `Patches` (`Strategic Merge Patch` & `JSON 6902 Patch`) (`Lectures 174, 177–193`).
+> - 💡 **[NGOÀI ĐỀ THI — Đáng biết]:** So sánh triết lý `Kustomize vs Helm` (`Lecture 175`) và sử dụng `Kustomize Components` (`kind: Component`) để tái sử dụng tính năng qua một tập con các overlays (`Lecture 194–195`).
+> - 👀 **[XEM QUA — Không cần tập trung]:** Cài đặt binary `kustomize` rời (`Lecture 176`) — vì Kustomize đã được tích hợp sẵn trực tiếp bên trong `kubectl` (`kubectl kustomize` và `kubectl apply -k`).
+
+## Lecture 174, 175 & 176: Kustomize Ideology & Kustomize vs Helm — 🎯 [CÓ THI CKAD]
+![[Pasted image 20260812114500.png]]
 ![[Pasted image 20261020120503.png]]
 ![[Pasted image 20261020120847.png]]
-## Lecture 175: Kustomize vs Helm
-None
-## Lecture 176: Installation/Setup
-None. 
-## Lecture 177: kustomization.yaml file
-- Kustomize looks for one specific file called a kustomization.yaml file.
-- it's gonna be broken down into two different sections:
-	- The first is it's going to contain a list of all of the Kubernetes resources that should be managed by Kustomize. This is going to be just a list of all of the yaml files that you want Kustomize to manage.
-	- The second thing is going to be all of the customizations that we want to apply to our transformation.
+- **Vấn đề Kustomize giải quyết & 2 khái niệm cốt lõi (`Lecture 174`):**
+  - Khi triển khai cùng một ứng dụng lên nhiều môi trường (`dev`, `staging`, `prod`), 90% cấu hình YAML là giống hệt nhau, chỉ khác một vài thông số (như số lượng `replicas`, tag `image`, giới hạn `resources`).
+  - **`Base` (Cấu hình gốc):** Chứa các file YAML Kubernetes nguyên bản dùng chung cho tất cả các môi trường kèm các giá trị mặc định.
+  - **`Overlays` (Các lớp phủ môi trường):** Chứa các tùy biến riêng biệt cho từng môi trường (`dev`, `stg`, `prod`) đè lên `Base` mà không cần sửa đổi hay nhân bản file gốc ở `Base`.
+- **So sánh `Kustomize` vs `Helm` (`Lecture 175`) — 💡 [NGOÀI ĐỀ THI — Đáng biết]:**
+  - **Helm (Templating Engine):** Biến các file YAML thành khuôn mẫu chứa biến `{{ .Values.xyz }}` (không còn là file YAML hợp lệ nếu đứng một mình) và điền giá trị từ `values.yaml`. Mạnh về đóng gói, phân phối ứng dụng trọn gói và quản lý lịch sử Release.
+  - **Kustomize (Template-free):** Giữ nguyên 100% các file YAML Kubernetes thuần túy hợp lệ, sau đó dùng cơ chế **Trộn & Vá đè (Merge / Patch)** thông qua file `kustomization.yaml`. Đã được tích hợp sẵn trong `kubectl` (`kubectl apply -k`).
+
+## Lecture 177, 178 & 179: Cấu trúc `kustomization.yaml` & Bộ lệnh thực thi — 🎯 [CÓ THI CKAD]
+- Kustomize luôn tìm kiếm một file có tên chính xác là **`kustomization.yaml`** trong thư mục chỉ định. File này gồm 2 phần chính:
+  1. **`resources:`** Danh sách toàn bộ các file manifest YAML (hoặc đường dẫn tới thư mục `base`) mà Kustomize cần quản lý.
+  2. **Các bộ biến đổi (Customizations):** `labels`, `namespace`, `namePrefix`, `images`, `patches`, `configMapGenerator`...
+
 ```yaml
-# deploy.yaml
+# 1. File deploy.yaml nguyên bản
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: nginx
   labels:
     app: nginx
-  name: nginx
 spec:
   replicas: 3
   selector:
     matchLabels:
       app: nginx
-  strategy: {}
   template:
     metadata:
       labels:
         app: nginx
     spec:
       containers:
-      - image: nginx
-        name: nginx
+      - name: nginx
+        image: nginx
         resources:
           requests:
-              cpu: 100m
-              memory: 128Mi
+            cpu: 100m
+            memory: 128Mi
           limits:
             cpu: 100m
             memory: 128Mi
-status: {}
-```
-```yaml
-# svc.yaml
+---
+# 2. File svc.yaml nguyên bản
 apiVersion: v1
 kind: Service
 metadata:
+  name: nginx
   labels:
     app: nginx
-  name: nginx
 spec:
+  type: NodePort
+  selector:
+    app: nginx
   ports:
   - name: 8080-80
     port: 8080
     protocol: TCP
     targetPort: 80
-  selector:
-    app: nginx
-  type: NodePort
-status:
-  loadBalancer: {}
 ```
 ```yaml
-# kustomization.yaml
-resources:
-  - deploy.yaml
-  - svc.yaml
-
-labels:
-  - pairs:
-      app.kubernetes.io/name: "nginx-server"
-      app.kubernetes.io/version: "1.0.0"
-    includeSelectors: true
-```
-## Lecture 178: Kustomize Output
-```bash
-kustomize build <dir>
-kustomize build <dir> | kubectl apply -f -
-kustomize build <dir> | kubectl delete -f -
-# or
-kubectl kustomize <dir>
-kubectl apply -k <dir>
-kubectl delete -k <dir>
-```
-## Lecture 179: Kustomize ApiVersion & Kind
-```yaml
-# kustomization.yaml
+# 3. File kustomization.yaml quản lý 2 file trên
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -114,15 +93,30 @@ labels:
       app.kubernetes.io/version: "1.0.0"
     includeSelectors: true
 ```
-## Lecture 180: Managing Directories
+
+### Bộ lệnh build & triển khai Kustomize (`Lecture 178`)
+```bash
+# Cách 1: Dùng trực tiếp qua kubectl (Khuyên dùng trong phòng thi CKAD — Chú ý cờ -k viết thường)
+kubectl kustomize <dir>               # Chỉ render và in kết quả YAML ra màn hình (Dry-run)
+kubectl kustomize <dir> > output.yaml # Xuất kết quả YAML đã biến đổi ra file
+kubectl apply -k <dir>                # Render và áp dụng trực tiếp lên Cluster
+kubectl delete -k <dir>               # Xóa toàn bộ tài nguyên được tạo từ thư mục Kustomize đó
+
+# Cách 2: Dùng binary kustomize độc lập
+kustomize build <dir>
+kustomize build <dir> | kubectl apply -f -
+kustomize build <dir> | kubectl delete -f -
+```
+
+## Lecture 180, 181 & 182: Managing Directories — 🎯 [CÓ THI CKAD]
 ![[Pasted image 20261020164858.png]]
-## Lecture 181: Managing Directories Demo
 ![[Pasted image 20261020165107.png]]
-## Lecture 182: Lab - Managing Directories (Kustomize)
-None
-## Lecture 183: Common Transformers
-**Khái niệm:** **Transformers** trong Kustomize dùng để áp dụng các thay đổi cấu hình đồng loạt (bulk modifications) lên toàn bộ các tài nguyên Kubernetes được khai báo trong `kustomization.yaml` mà không cần sửa từng file YAML thủ công.
-### 1. Các Common Transformers phổ biến
+- Khi ứng dụng có nhiều phân hệ (VD: `api/`, `db/`, `cache/`, `kafka/`), bạn có thể tách mỗi phân hệ vào một thư mục con có file `kustomization.yaml` riêng, sau đó tại file `kustomization.yaml` ở thư mục gốc chỉ cần liệt kê tên các thư mục con đó trong mục `resources:`.
+
+## Lecture 183, 184, 185 & 186: Common Transformers & Image Transformers — 🎯 [CÓ THI CKAD]
+- **Bản chất:** **Transformers** dùng để áp dụng các thay đổi cấu hình đồng loạt (bulk modifications) lên toàn bộ các tài nguyên được khai báo trong `kustomization.yaml` mà không cần sửa từng file YAML thủ công.
+
+### 1. Bảng tổng hợp các Common Transformers (`Lecture 183`)
 
 | Transformer | Cú pháp trong `kustomization.yaml` | Tác dụng | Trạng thái |
 | :--- | :--- | :--- | :--- |
@@ -131,28 +125,27 @@ None
 | **Namespace** | `namespace` | Đặt toàn bộ resources vào chung một namespace | Active |
 | **Name Prefix / Suffix** | `namePrefix` / `nameSuffix` | Thêm tiền tố / hậu tố vào tên (`metadata.name`) của mọi resources | Active |
 
----
-### 2. Lưu ý quan trọng về Deprecation: `commonLabels` vs `labels`
-* **Cũ (Deprecated - trong bài giảng):**
-```yaml
-  commonLabels:
-    org: KodeKloud
-```
-
-_Nhược điểm:_ Tự động ép label vào cả `spec.selector` và `spec.template.metadata.labels`. Khi cập nhật label mới trên Deployment đang chạy sẽ gây lỗi `field is immutable`.
-- **Mới (Chuẩn hiện tại):**
-```yaml
+- **Lưu ý quan trọng về `commonLabels` vs `labels`:**
+  - **Cú pháp cũ (`commonLabels` — Đã deprecated nhưng vẫn có thể gặp trong Lab cũ):**
+    ```yaml
+    commonLabels:
+      org: KodeKloud
+    ```
+    *Nhược điểm:* Tự động ép label vào cả `spec.selector` và `spec.template.metadata.labels`. Khi cập nhật label mới trên Deployment đang chạy sẽ gây lỗi `field is immutable`.
+  - **Cú pháp mới (`labels` — Chuẩn hiện tại):**
+    ```yaml
     labels:
       - pairs:
           org: KodeKloud
-        includeSelectors: false # Mặc định là false: chỉ gắn vào metadata.labels, an toàn khi update
+        includeSelectors: false # Mặc định false: chỉ gắn vào metadata.labels, an toàn khi update
         includeTemplates: true  # Gắn thêm vào pod template (spec.template.metadata.labels)
-```
-> Lưu ý: Trong môi trường lab của KodeKloud hoặc đề thi nếu yêu cầu rõ từ khóa cũ thì vẫn có thể dùng `commonLabels`, nhưng thực tế và Kustomize mới sẽ cảnh báo warning).
-### 3. Ví dụ tổng hợp trong `kustomization.yaml`
+    ```
+
+### 2. Ví dụ tổng hợp Common Transformers & Image Transformers (`Lecture 183 & 184`)
 ```yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+
 resources:
   - deployment.yaml
   - service.yaml
@@ -160,7 +153,7 @@ resources:
 # 1. Đặt Namespace chung
 namespace: dev-ns
 
-# 2. Thêm tiền tố và hậu tố vào tên Resource (VD: dev-my-app-v1). Kustomize sẽ áp dụng vào tất cả các trường metadata.name của mọi resource được nạp trong file đó
+# 2. Thêm tiền tố và hậu tố vào metadata.name của mọi resource (VD: dev-my-app-v1)
 namePrefix: dev-
 nameSuffix: -v1
 
@@ -169,118 +162,83 @@ labels:
   - pairs:
       org: KodeKloud
       env: development
-    includeSelectors: true # Bật true nếu muốn tự động nối Service selector với Deployment
+    includeSelectors: true
 
 # 4. Gắn Annotations chung
 commonAnnotations:
   managed-by: kustomize
   owner: helios
-```
-## Lecture 184: Image Transformers
-```yaml
-# 5. Thay đổi image hoặc thay đổi image tag
+
+# 5. Image Transformer: Đổi tên image hoặc đổi image tag không cần sửa file gốc (Lecture 184)
 images:
-- name: nginx
-  newName: haproxy
-- name: postgres
-  newTag: "18.6"
-- name: php
-  newName: python
-  newTag: "3.14"
+  - name: nginx          # Đổi tên image từ nginx sang haproxy
+    newName: haproxy
+  - name: postgres       # Giữ nguyên image postgres, chỉ đổi tag sang 18.6
+    newTag: "18.6"
+  - name: php            # Đổi cả tên image lẫn tag
+    newName: python
+    newTag: "3.14"
 ```
-## Lecture 185: Transformers Demo
-None
-## Lecture 186: Lab - Transformers
-None
-## Lecture 187: Patches Intro
-- if you wanna apply or change something on one specific object or just a couple of objects, you would use a customized patch. So things like updating the number of replicas in a deployment, you would use a customized patch to match a specific object and then change that value.
-- Now to create a patch, we have to provide three different parameters:
-	- The first one is operation type: add, remove, and replace:
-		- So add, you'd perform an operation, an add operation. If we have a list of containers in a deployment, and let's say you wanted to add another container to that list, that would be an add operation.
-		- Remove would be the opposite. Let's say you wanted to remove a container from the list or even remove a label. It could be removing anything.
-		- And then finally, we have replace. So replace is taking a value that's provided and then swapping it out with another value. So if the base configs have a replica count of 5, you could do a replace and replace the replica to a value of 10.
-	- Then after we specify the operation, we have to provide a target like kind or the version or the name of the object or the namespace label selector or annotation selector.
-	- And then after you match your specific object, we have to then provide a value. So for the value property, this is going to be the value that we will either be replaced or added with.
+
+## Lecture 187, 188, 189, 190 & 191: Patches (Strategic Merge Patch vs JSON 6902 Patch) — 🎯 [CÓ THI CKAD]
+- **Khi nào dùng `Patches`?** Khi bạn chỉ muốn thay đổi chuyên biệt trên **1 hoặc một vài đối tượng cụ thể** (VD: sửa `replicas` của riêng `api-deployment`, thêm/xóa 1 key trong dictionary `labels`, hoặc thêm/xóa 1 container trong mảng `containers`).
+- **3 thông số cốt lõi của một phép Patch (`Lecture 187`):**
+  1. **Operation type (Loại thao tác):** `add` (thêm mới), `remove` (xóa bỏ), `replace` (thay thế giá trị).
+  2. **Target (Đối tượng mục tiêu):** Xác định đối tượng cần sửa qua `kind`, `name`, `apiVersion`, `labelSelector`...
+  3. **Value (Giá trị mới):** Nội dung sẽ được thêm vào hoặc thay thế.
+- **2 cách viết Patch (`Lecture 188`):**
+  - **Inline:** Viết trực tiếp nội dung patch bên trong file `kustomization.yaml` (dưới khóa `patch: |-`).
+  - **Separate file:** Tách nội dung patch ra một file YAML riêng rồi trỏ đường dẫn tới file đó (qua khóa `path: <tên-file>.yaml`).
+- **Điểm khác biệt cốt lõi giữa `Strategic Merge Patch (SMP)` và `JSON 6902 Patch`:**
+  - **Strategic Merge Patch (SMP):** Viết giống hệt cấu trúc cây YAML chuẩn của Kubernetes. Tuy nhiên, SMP **không thể dùng để đổi `apiVersion`, `kind`, hoặc `metadata.name`** của đối tượng gốc, vì bản thân SMP dùng chính 3 trường này làm bộ lọc (selector) để tìm xem đối tượng nào cần vá!
+  - **JSON 6902 Patch:** Khai báo `target` tách riêng bên ngoài, và bên trong dùng cú pháp mảng `- op: add/replace/remove`, `path: /...`, `value: ...` $\rightarrow$ Đổi được cả `metadata.name` và thao tác chính xác theo chỉ mục mảng (`0`, `1`, `-`).
+
+### 1. Thao tác trên trường đơn & Dictionary/Map (`Lecture 187, 188 & 189`)
 ```yaml
-# 6.1. Thay đổi bằng patch (JSON 6902 Patch)
+# A. Đổi tên hoặc sửa trường bằng JSON 6902 Patch (Inline & File rời)
 patches:
-- target:
-    kind: Deployment
-    name: api-deployment
-  patch: |-
-  - op: replace # Inline patch
-    path: /metadata/name
-    value: web-deployment
-```
----
-```yaml
-# 6.2. Thay đổi bằng patch (Stategic Merge Patch)
-patches:
-- patch: |-
-    apiVersion: apps/v1
-    kind: Deployment
-    metadata:
+  # Cách 1: Inline JSON 6902 Patch
+  - target:
+      kind: Deployment
       name: api-deployment
-    spec:
-      replicas: 5
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: web-deployment
+      - op: add
+        path: /spec/template/metadata/labels/org
+        value: helios
+      - op: remove
+        path: /spec/template/metadata/labels/org
+  # Cách 2: Trỏ ra file JSON 6902 Patch rời
+  - target:
+      kind: Deployment
+      name: api-deployment
+    path: replica-patch.yaml
 ```
-- Strategic Merge Patch (SMP) không thể dùng để thay đổi các trường `apiVersion`, `kind`, hoặc `metadata.name` của resource gốc. Bởi vì Strategic Merge Patch sử dụng chính các trường **`apiVersion`**, **`kind`**, và **`metadata.name`** làm **"bộ lọc" (selector)** để định danh và tìm kiếm xem resource nào cần tác động.
-## Lecture 188: Different Types of Patches
-- For both the JSON 6902 patch as well as the strategic merge patch, there's two different ways you can define a patch. The first one is inline, that's where you define the patch within the kustomization.yaml file. The other method is by using a separate file:
-	- What we can do instead is in the kustomization.yaml file, we can provide the target like we normally do, and then we can provide a path to a yaml file that's going to contain all of our patches, so that we don't have to clutter up our kustomization.yaml file.
 ```yaml
-# 6.3. Thay đổi bằng patch (Separate file for JSON 6902 Patch)
-patches:
-- target:
-    kind: Deployment
-    name: api-deployment
-  path: replica-patch.yaml
-```
----
-```yaml
-# replica-patch.yaml
+# Nội dung file replica-patch.yaml (cho JSON 6902 Patch):
 - op: replace
   path: /spec/replicas
   value: 5
 ```
----
+
 ```yaml
-# 6.4. Thay đổi bằng patch (Separate file for Strategic Merge Patch)
+# B. Sửa trường, Thêm key hoặc Xóa key trong Dictionary bằng Strategic Merge Patch (SMP)
 patches:
-- replica-patch.yaml
+  # Cách 1: Inline SMP
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: api-deployment
+      spec:
+        replicas: 5
+  # Cách 2: Trỏ ra file SMP rời
+  - path: label-patch.yaml
 ```
----
 ```yaml
-# replica-patch.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: api-deployment
-spec:
-  replicas: 5
-```
-## Lecture 189: Patches Dictionary
-- Let's now take a look at how we can add a new key:
-```yaml
-# 6.5. Thay đổi bằng patch (Add - JSON 6902 Patch)
-patches:
-- target:
-    kind: Deployment
-    name: api-deployment
-  patch: |-
-  - op: add
-    path: /spec/template/metadata/labels/org
-    value: helios
-```
----
-```yaml
-# 6.6. Thay đổi bằng patch (Add - Separate file for Strategic Merge Patch)
-patches:
-- label-patch.yaml
-```
----
-```yaml
-# replica-patch.yaml
+# Nội dung file label-patch.yaml (cho Strategic Merge Patch):
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -289,62 +247,37 @@ spec:
   template:
     metadata:
       labels:
-        org: helios
+        org: helios       # Để THÊM hoặc THAY THẾ key 'org'
+        old-label: null   # Đặt giá trị 'null' để XÓA key 'old-label' khỏi Dictionary!
 ```
-- we're gonna take a look at how we can remove a key from a dictionary using a JSON 6902 Patch:
+
+### 2. Thao tác trên Mảng / Danh sách (`List` — `Lecture 190`)
 ```yaml
-# 6.7. Thay đổi bằng patch (Remove - JSON 6902 Patch)
+# A. Thao tác List bằng JSON 6902 Patch (Dùng index 0, 1... hoặc dấu '-' cho vị trí cuối mảng)
 patches:
   - target:
       kind: Deployment
       name: api-deployment
     patch: |-
+      # 1. Replace phần tử đầu tiên (index 0) trong danh sách containers
+      - op: replace
+        path: /spec/template/spec/containers/0
+        value:
+          name: haproxy
+          image: haproxy
+      # 2. Add thêm 1 container mới vào cuối danh sách (dùng dấu '-')
+      - op: add
+        path: /spec/template/spec/containers/-
+        value:
+          name: sidecar
+          image: busybox
+      # 3. Remove container ở vị trí thứ 2 (index 1)
       - op: remove
-        path: /spec/template/metadata/labels/org
+        path: /spec/template/spec/containers/1
 ```
----
+
 ```yaml
-# 6.8. Thay đổi bằng patch (Remove - Separate file for Strategic Merge Patch)
-patches:
-- label-patch.yaml
-```
----
-```yaml
-# replica-patch.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: api-deployment
-spec:
-  template:
-    metadata:
-      labels:
-        org: null
-```
-## Lecture 190: Patches List
-- Let's now take a look at how we can perform those operations on a list:
-```yaml
-# 6.9. Thay đổi bằng patch (Replace List - JSON 6902 Patch)
-patches:
-- target:
-    kind: Deployment
-    name: api-deployment
-  patch: |-
-  - op: replace
-    path: /spec/template/spec/containers/0 # Index of the item in the list
-      value:
-        name: haproxy
-        image: haproxy
-```
----
-```yaml
-# 6.10. Thay đổi bằng patch (Replace List - Separate file for Strategic Merge Patch)
-patches:
-- image-patch.yaml
-```
----
-```yaml
-# image-patch.yaml
+# B. Thao tác List bằng Strategic Merge Patch (Dựa theo khóa định danh 'name' của phần tử)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -353,167 +286,79 @@ spec:
   template:
     spec:
       containers:
-      - name: nginx # Can't change this
+      # 1. Replace: Giữ nguyên 'name: nginx' để Kustomize tìm đúng container, rồi đổi trường image
+      - name: nginx
         image: haproxy
+      # 2. Add: Khai báo một tên container chưa từng có trong base sẽ tự động được thêm mới vào mảng
+      - name: new-sidecar
+        image: busybox
+      # 3. Delete: Dùng chỉ thị đặc biệt '$patch: delete' kèm tên phần tử cần xóa
+      - $patch: delete
+        name: old-container
 ```
-- The same with add:
-```yaml
-# 6.11. Thay đổi bằng patch (Add List - JSON 6902 Patch)
-patches:
-- target:
-    kind: Deployment
-    name: api-deployment
-  patch: |-
-  - op: add
-    path: /spec/template/spec/containers/- # Last index of the list, or where you want to add
-      value:
-        name: haproxy
-        image: haproxy
-```
----
-```yaml
-# 6.12. Thay đổi bằng patch (Add List - Separate file for Strategic Merge Patch)
-patches:
-- image-patch.yaml
-```
----
-```yaml
-# image-patch.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: api-deployment
-spec:
-  template:
-    spec:
-      containers:
-      - name: haproxy
-        image: haproxy
-```
-- And delete:
-```yaml
-# 6.13. Thay đổi bằng patch (Delete List - JSON 6902 Patch)
-patches:
-- target:
-    kind: Deployment
-    name: api-deployment
-  patch: |-
-  - op: remove
-    path: /spec/template/spec/containers/1
-```
----
-```yaml
-# 6.14. Thay đổi bằng patch (Delete List - Separate file for Strategic Merge Patch)
-patches:
-- image-patch.yaml
-```
----
-```yaml
-# image-patch.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: api-deployment
-spec:
-  template:
-    spec:
-      containers:
-      - $patch: delete # Different from others
-        name: haproxy
-```
-## Lecture 191: Lab - Patches
-None
-## Lecture 192: Overlays
+
+## Lecture 192 & 193: Overlays & Labs — 🎯 [CÓ THI CKAD]
 ![[Pasted image 20261020214525.png]]
-> [!warning] Deprecation
-> base is deprecated. You should using resources for both directories and files.
+> [!WARNING]
+> Từ khóa `bases:` đã bị khai tử (deprecated). Hiện tại bạn luôn sử dụng từ khóa **`resources:`** cho cả các file YAML rời lẫn đường dẫn thư mục `../../base`.
 
 ![[Pasted image 20261020214924.png]]
-- Khi bạn chạy lệnh `kubectl kustomize`, công cụ này sẽ xây dựng một cây tài nguyên (Resource Tree). Nếu thư mục `root` gọi `con`, rồi `con` lại gọi ngược lên `root`, Kustomize sẽ bị kẹt trong một vòng lặp tải cấu hình không bao giờ kết thúc.
-- Kết quả khi chạy lệnh: Hệ thống sẽ không thể build được file yaml đầu ra mà sẽ báo lỗi trực tiếp trên terminal. Cụ thể, Kustomize sẽ trả về lỗi có nội dung tương tự như sau:
-```bash
-Error: cycle detected in resources: ...
-```
-_(Lỗi này thông báo hệ thống đã phát hiện một chu trình/vòng lặp khép kín trong khai báo tài nguyên)._
-
-### Giải pháp thiết kế đúng (Best Practices)
-Để tránh lỗi này và giữ cho cấu hình Kustomize luôn sạch, bạn cần tuân theo nguyên lý **dòng chảy một chiều**:
-- **Thư mục Base (Gốc):** Chỉ chứa các tài nguyên core định dạng chuẩn (Deployments, Services, StatefulSets...) và **không** trỏ đi đâu cả.
-- **Thư mục Overlays (Môi trường dev/stg/prod):** Trỏ đến thư mục Base để kế thừa cấu hình, sau đó áp dụng các bản Patch đè lên. Các thư mục con này tuyệt đối không được trỏ chéo qua lại lẫn nhau hoặc trỏ ngược về gốc.
 ![[Pasted image 20261020215226.png]]
-## Lecture 193: Lab - Overlay
-None
-## Lecture 194: Components
-- A component provides the ability to define a reusable piece of configuration logic that can be included in multiple overlays.
-### 1. Vấn đề mà "Components" giải quyết là gì?
+- **Bẫy lỗi vòng lặp (`Error: cycle detected in resources`) và Nguyên tắc thiết kế đúng:**
+  - Khi chạy `kubectl kustomize`, Kustomize xây dựng một cây tài nguyên (Resource Tree). Nếu thư mục `base` gọi thư mục `con`, rồi thư mục `con` lại trỏ ngược lên `base`, Kustomize sẽ rơi vào vòng lặp vô tận và báo lỗi `Error: cycle detected in resources: ...`.
+  - **Quy tắc dòng chảy một chiều chuẩn:**
+    1. **Thư mục `base/`:** Chỉ chứa các manifest gốc (`deploy.yaml`, `service.yaml`) và file `base/kustomization.yaml` quản lý chúng (tuyệt đối **không** trỏ sang bất kỳ overlay nào).
+    2. **Thư mục `overlays/dev/`, `overlays/stg/`, `overlays/prod/`:** Mỗi môi trường có một file `kustomization.yaml` riêng, dùng `resources: - ../../base` để kế thừa từ gốc, sau đó áp dụng các `patches` riêng của môi trường đó. Các thư mục overlay không bao giờ trỏ chéo sang nhau.
 
-* **Bài toán:** Khi triển khai một ứng dụng ra nhiều môi trường hoặc biến thể khác nhau (được gọi là các **overlays** như `dev`, `premium`, `self-hosted`), sẽ có những tính năng phụ trợ (ví dụ: *Cơ chế caching dùng Redis* hay *Database ngoại vi dùng Postgres*) **chỉ muốn bật ở một tập hợp con (subset) các overlays**, chứ không muốn bật ở tất cả mọi nơi.
-* **Cách làm truyền thống (Không tối ưu):**
-	* Nếu đưa vào **Base**: Tất cả các overlay đều phải gánh tính năng đó (dù có nơi không cần).
-	* Nếu copy-paste thủ công vào từng overlay: Dễ dẫn đến hiện tượng **config drift** (lệch cấu hình khi chỉnh sửa sót một nơi) và kém linh hoạt khi scale thêm môi trường mới.
-* **Giải pháp:** Sử dụng **Kustomize Components** — một khối cấu hình độc lập, tái sử dụng được, gói gọn tất cả tài nguyên (resources, patches, secrets, configmaps...) của một tính năng vào một chỗ duy nhất và cho phép các overlay **import** vào khi cần.
-### 2. Cấu trúc thư mục mẫu
+## Lecture 194 & 195: Components & Labs — 💡 [NGOÀI ĐỀ THI — Đáng biết]
+- **1. Bài toán mà `Components` giải quyết là gì?**
+  - Giả sử bạn có nhiều môi trường (`overlays`) như `dev`, `premium`, `self-hosted`, `standalone`. Có những tính năng phụ trợ (như *Caching dùng Redis* hoặc *Database dùng Postgres*) **chỉ muốn bật ở một vài môi trường nhất định** (subset of overlays) chứ không phải tất cả:
+    - Nếu bỏ vào `base/`: Môi trường `standalone` không cần cũng bị ép phải gánh thêm.
+    - Nếu copy-paste vào từng overlay `dev` và `premium`: Trùng lặp code và dễ lệch cấu hình (*config drift*) khi bảo trì.
+  - **Giải pháp (`Kustomize Components`):** Đóng gói trọn bộ logic của một tính năng (gồm cả `resources` mới + `patches` tiêm biến vào base + `configMaps`/`secrets`) vào một thư mục độc lập trong `components/<tên-tính-năng>`. Overlay nào cần tính năng đó chỉ việc gọi qua trường **`components:`**.
 
-Bài giảng minh họa cấu trúc thư mục tiêu chuẩn khi sử dụng Components như sau:
-
+- **2. Cấu trúc thư mục tiêu chuẩn với Components:**
 ```text
 k8s/
-├── base/                   # Cấu hình chung cho mọi môi trường
+├── base/                   # Cấu hình gốc dùng chung cho mọi môi trường
 │   ├── kustomization.yaml
 │   └── api-depl.yaml
-├── components/             # Thư mục chứa các tính năng độc lập (Components)
+├── components/             # Chứa các gói tính năng tái sử dụng độc lập
 │   ├── caching/            # Component cho tính năng Caching (Redis)
 │   └── database/           # Component cho tính năng Database (Postgres)
 │       ├── kustomization.yaml
 │       ├── postgres-depl.yaml
 │       └── deployment-patch.yaml
 └── overlays/               # Các môi trường triển khai
-    ├── dev/                # (Ví dụ: Dùng database component)
-    ├── premium/            # (Ví dụ: Dùng cả caching & database)
-    └── standalone/         # (Ví dụ: Không dùng component nào)
-
+    ├── dev/                # (Chỉ import database component)
+    ├── premium/            # (Import cả caching & database components)
+    └── standalone/         # (Không import component nào)
 ```
 
----
-### 3. Cấu tạo bên trong một Component (Ví dụ: Thư mục `database`)
-
-Bên trong thư mục của một component (ví dụ thư mục `database`), ta sẽ có các thành phần sau:
-
-1. **Các tài nguyên riêng của tính năng (`postgres-depl.yaml`, secret, v.v.):**
-* Chứa các file manifest Kubernetes thuần túy cần thiết để tính năng đó hoạt động (trong trường hợp này là Deployment của Postgres và Secret chứa mật khẩu database).
-
-2. **File `kustomization.yaml` riêng của component:**
-* **Điểm quan trọng:** Phải khai báo `apiVersion` và `kind: Component` đặc trưng cho component (không dùng `kind: Kustomization` như bình thường).
-* Khai báo các `resources` cần sinh ra (như `postgres-depl.yaml`, secret).
-* Khai báo các `patches` dùng để chỉnh sửa/tiêm thêm cấu hình vào resource gốc ở tầng `base` (ví dụ: tiêm biến môi trường mật khẩu database vào `api-deployment`).
-### 4. Cách Overlay sử dụng Component
-
-Để một môi trường cụ thể (ví dụ thư mục `dev`) sử dụng một tính năng, trong file `kustomization.yaml` của overlay đó, ta chỉ cần gọi đến nó thông qua trường **`components`**:
-
-```yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-
-# 1. Trỏ về cấu hình gốc (Base)
-resources:
-  - ../../base
-
-# 2. Import thêm các Component cần thiết cho môi trường này
-components:
-  - ../../components/database
-
-```
-
----
-
-### Tóm lại ý nghĩa cốt lõi:
-
-* **Viết một lần, dùng nhiều nơi:** Gom toàn bộ logic của một tính năng (gồm cả resource mới + patch đè vào base) vào một thư mục `components/<tên-tính-năng>`.
-* **Linh hoạt chọn lọc:** Overlay nào cần tính năng nào thì chỉ việc khai báo thêm trường `components:` trỏ đến đó, giúp code gọn gàng, tránh lặp lại và dễ bảo trì.
-
-- So components are just reusable blocks of Kubernetes configs, that's all it is. Don't complicate it, it's just all of the resources for a specific feature, all of the patches, all of the config maps, secrets, and any other Kubernetes-related configs associated with the feature, they go into a component, and then you can enable it in multiple overlays, that's it.
+- **3. Khai báo `kind: Component` và Cách gọi trong Overlay:**
 ![[Pasted image 20261021234959.png]]
 ![[Pasted image 20261021235134.png]]
 ![[Pasted image 20261021235312.png]]
-## Lecture 195: Lab - Components
-None
+```yaml
+# 1. Bên trong file components/database/kustomization.yaml:
+# Chú ý: Bắt buộc khai báo apiVersion v1alpha1 và kind: Component (KHÔNG dùng kind: Kustomization)
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+resources:
+  - postgres-depl.yaml
+patches:
+  - path: deployment-patch.yaml
+---
+# 2. Bên trong file overlays/dev/kustomization.yaml:
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Kế thừa từ Base
+resources:
+  - ../../base
+
+# Nhúng thêm các Component cần thiết cho môi trường này
+components:
+  - ../../components/database
+```

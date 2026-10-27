@@ -8,53 +8,59 @@ tags:
 ---
 # Section 3: Configuration
 
-## Lecture 41: Define, Build and Modify Container Images
+> **Phân loại trọng tâm trong Section 3:**
+> - 🎯 **[CÓ THI CKAD — Trọng tâm]:** Build/Save Container Image (`Dockerfile`, `podman/docker build & save`), `command` & `args`, `env`, `ConfigMap`, `Secret`, `SecurityContext`, `Resource Requirements` (`requests`/`limits`, `LimitRange`, `ResourceQuota`), `ServiceAccount`, `Taints & Tolerations`, `nodeSelector` & `nodeAffinity` (`Lectures 41–54, 59–67, 69–76`).
+> - 💡 **[NGOÀI ĐỀ THI — Đáng biết]:** Cơ chế bảo mật Secret trong K8s (`tmpfs`), kiến trúc Linux Namespaces/Capabilities trong Docker, và cách tự khai báo `projected` volume cho token (`Lectures 53, 55, 58, phần nâng cao Lecture 65`).
+> - 👀 **[XEM QUA — Không cần tập trung]:** Cấu hình mã hóa `etcd` (`EncryptionConfiguration` trên `kube-apiserver` và `etcdctl`) ở `Lecture 57` — đây là bài thực hành của kỳ thi **CKA**, không nằm trong đề thi CKAD.
+
+## Lecture 41: Define, Build and Modify Container Images — 🎯 [CÓ THI CKAD]
 ![[Pasted image 20260802215955.png]]
-- Quick overview of the process of creating my own image:
-	1. Create a file named Dockerfile and write down the instructions for setting up your application in it, such as installing dependencies, where to copy the source code from and to, and what the entry point of the application is, etc.
-	2. Once done, build the image using the `docker build . -t helios-ryuu/my-app` command and specify the Dockerfile as input as well as a tag name for the image. It builds this in a layered architecture. Each line of instructions creates a new layer in the Docker image with just the changes from the previous layer. You can see this information by running `docker history helios-ryuu/my-app`
-	3. To make it available on the public Docker Hub registry, run the `docker push helios-ryuu/my-app` and specify the name of the image you just created.
+- **Quy trình tạo Container Image:**
+  1. Tạo file `Dockerfile` định nghĩa các bước cài đặt môi trường (`FROM`, `RUN`), copy mã nguồn (`COPY`) và lệnh khởi chạy (`ENTRYPOINT`/`CMD`).
+  2. Build image theo kiến trúc phân lớp (**layered architecture**): mỗi dòng chỉ thị tạo ra 1 layer chỉ lưu phần thay đổi so với layer trước (kiểm tra bằng `docker history <image>`).
+  3. Trong phòng thi CKAD: Đề thường yêu cầu build image từ `Dockerfile` có sẵn và **xuất ra file `.tar`** bằng `podman save` hoặc `docker save` (chú ý không push lên registry trừ khi đề yêu cầu rõ).
 ```dockerfile
-FROM Ubuntu
+FROM ubuntu:22.04
 
-RUN apt-get update
-RUN apt-get install python
-
-RUN pip install flask
-RUN pip install flask-mysql
+RUN apt-get update && apt-get install -y python3 python3-pip
+RUN pip install flask flask-mysql
 
 COPY . /opt/source-code
 
-ENTRYPOINT FLASK_APP=/opt/source-code/app.py flask run
+ENTRYPOINT ["sh", "-c", "FLASK_APP=/opt/source-code/app.py flask run"]
 ```
-- The `FROM Ubuntu` defines what the base OS should be for this container. Every Docker image must be based off of another image, either an OS or another image that was created before based on an OS. All Dockerfile must start with a from instruction.
-- The `RUN` instruction instructs Docker to run a particular command on those base images.
-- The `COPY . /opt/source-code` instruction copies files from the local system onto the Docker image. In this case, the source code of our application is in the same location as our Dockerfile (current folder), and we will be copying it over to the location `/opt/source-code` inside the Docker image.
-- And finally, `ENTRYPOINT` allows us to specify a command that will be run when the image is run as a container.
-## Lecture 42: Lab - Docker Images
+```bash
+# Build image bằng Docker hoặc Podman
+docker build -t helios-ryuu/my-app:1.0 .
+podman build -t helios-ryuu/my-app:1.0 .
+
+# Kiểm tra lịch sử các layer của image
+docker history helios-ryuu/my-app:1.0
+
+# Xuất image ra file tar (Rất hay gặp trong đề thi CKAD)
+podman save -o my-app.tar helios-ryuu/my-app:1.0
+```
+## Lecture 42: Lab - Docker Images — 🎯 [CÓ THI CKAD]
 ```bash
 docker images
 docker run -d -p 8282:8080 webapp-color
 docker run --rm python:3.14 cat /etc/os-release
 docker run -d -p 8383:8080 webapp-color:lite
 ```
-## Lecture 43: Commands and Arguments in Docker
-```dockerfile
-FROM Ubuntu
-CMD sleep 5
-# CMD ["sleep", "5"]
-```
-- Containers are meant to run a specific task or process, such as to host an instance of a web server or a database, etc. Once the task is completed, the container exits.
-- `CMD` which stands for command defines the program will be run within the container when it starts. In case of it, the command line parameters passed will get replaced entirely.
-- `ENTRYPOINT` defines the executable command. Whatever you specify on the command line, it will get appended to the entry point.
+## Lecture 43: Commands and Arguments in Docker — 🎯 [CÓ THI CKAD]
+- Container chỉ sống chừng nào tiến trình chính (PID 1) bên trong nó còn chạy; ngay khi tiến trình hoàn thành hoặc dừng, container sẽ thoát (`Exited`).
+- **Phân biệt `ENTRYPOINT` vs `CMD` trong Dockerfile:**
+  - `ENTRYPOINT`: Định nghĩa chương trình thực thi chính khi container khởi động. Các tham số truyền thêm ở cuối lệnh `docker run` sẽ được **nối thêm (append)** vào sau `ENTRYPOINT` (muốn ghi đè phải dùng cờ `--entrypoint`).
+  - `CMD`: Định nghĩa tham số mặc định cho `ENTRYPOINT` (hoặc lệnh mặc định nếu không có `ENTRYPOINT`). Bất kỳ tham số nào truyền ở cuối lệnh `docker run` sẽ **ghi đè hoàn toàn** `CMD`.
 ```dockerfile
 FROM ubuntu
 ENTRYPOINT ["sleep"]
 CMD ["5"]
 ```
-> In this case, the `CMD` instruction will be appended to the `ENTRYPOINT` instruction. If you provide parameters to the command line, it will override the command instruction.
-> If you want to override the `ENTRYPOINT` instruction, you can do it by using the `--entrypoint` option in the `docker run` command.
-## Lecture 44: Commands and Arguments in Kubernetes
+## Lecture 44: Commands and Arguments in Kubernetes — 🎯 [CÓ THI CKAD]
+- **Ánh xạ từ Dockerfile sang Pod YAML:**
+  - Trường **`command`** trong K8s $\rightarrow$ Ghi đè **`ENTRYPOINT`** của Dockerfile.
+  - Trường **`args`** trong K8s $\rightarrow$ Ghi đè **`CMD`** của Dockerfile.
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -64,58 +70,25 @@ spec:
   containers:
   - name: ubuntu-sleeper
     image: ubuntu-sleeper
-    command: ["sleep"] # Override the pre-defined entrypoint in the image
-    args: ["30"]
+    command: ["sleep"] # Ghi đè ENTRYPOINT
+    args: ["30"]       # Ghi đè CMD
 ```
-- Anything that is appended to the `docker run` command will go into the args property of the pod definition in the form of an array.
-- The command fields corresponds to `ENTRYPOINT` instruction in the Dockerfile
-## Lecture 45: A Quick Noted on Editing Pods and Deployments
-### Edit a POD
-
-Remember, you CANNOT edit specifications of an existing POD other than the below.
-
-- spec.containers[*].image
-- spec.initContainers[*].image
-- spec.activeDeadlineSeconds
-- spec.tolerations
-
-For example you cannot edit the environment variables, service accounts, resource limits (all of which we will discuss later) of a running pod. But if you really want to, you have 2 options:
-
-1. Run the `kubectl edit pod <pod name>` command.  This will open the pod specification in an editor (vi editor). Then edit the required properties. When you try to save it, you will be denied. This is because you are attempting to edit a field on the pod that is not editable.
-
-![](https://img-c.udemycdn.com/redactor/raw/2019-05-30_14-46-21-89ea56fea6b993ee0ccff1625b13341e.PNG)
-
-![](https://img-c.udemycdn.com/redactor/raw/2019-05-30_14-47-14-07b2638d1a72cb2d5b000c00971f6436.PNG)
-
-A copy of the file with your changes is saved in a temporary location as shown above.
-
-You can then delete the existing pod by running the command:
-
-`kubectl delete pod webapp`
-
-## Lecture 46 & 47: Lab - Commands and Arguments
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: ubuntu-sleeper-pod
-spec:
-  containers:
-  - name: ubuntu-sleeper
-    image: ubuntu-sleeper
-    command: 
-    - "sleep"
-    - "5000"
-```
-
+## Lecture 45: A Quick Note on Editing Pods and Deployments — 🎯 [CÓ THI CKAD]
+- **Pod đang chạy** chỉ cho phép sửa trực tiếp: `spec.containers[*].image`, `spec.initContainers[*].image`, `spec.activeDeadlineSeconds`, `spec.tolerations`.
+- Nếu cần sửa các trường khác (`env`, `command`, `args`, `resources`, `volumeMounts`, `serviceAccountName`...), dùng 1 trong 2 cách:
+  - **Cách 1:** Chạy `kubectl edit pod <pod-name>` $\rightarrow$ Khi lưu bị từ chối, K8s sẽ lưu sẵn bản nháp tại `/tmp/kubectl-edit-xxxx.yaml` $\rightarrow$ Chạy `kubectl replace --force -f /tmp/kubectl-edit-xxxx.yaml`.
+  - **Cách 2 (An toàn & chuẩn hơn):** Xuất ra file YAML `kubectl get pod <pod-name> -o yaml > pod.yaml` $\rightarrow$ Sửa file `pod.yaml` $\rightarrow$ `kubectl replace --force -f pod.yaml`.
+- **Với Deployment:** Mọi trường bên trong `spec.template` đều sửa trực tiếp được bằng `kubectl edit deploy <name>` (Deployment sẽ tự động cuộn Pod mới lên).
+## Lecture 46 & 47: Lab - Commands and Arguments — 🎯 [CÓ THI CKAD]
 ```bash
-kubectl replace --force -f /tmp/kubectl-edit-1234567890.yaml # Not best practice
+# Sinh nhanh Pod YAML có args:
+kubectl run ubuntu-sleeper --image=ubuntu-sleeper --dry-run=client -o yaml -- 7200
 
-kubectl run ubuntu-sleeper --image=ubuntu-sleeper -- 7200
-kubectl run ubuntu-sleeper --image=ubuntu-sleeper --command -- sleep 4200
+# Sinh nhanh Pod YAML có command:
+kubectl run ubuntu-sleeper --image=ubuntu-sleeper --dry-run=client -o yaml --command -- sleep 4200
 ```
-## Lecture 48: Environment Variables
-- To set an environment variable, use the env property. Env is an array. Each item has a name and a value property. The name is made available with the container, and the value is its value.
+## Lecture 48: Environment Variables — 🎯 [CÓ THI CKAD]
+- Khai báo biến môi trường trực tiếp dưới dạng mảng `name`/`value` trong `spec.containers[*].env`:
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -127,27 +100,21 @@ spec:
     image: nginx
     env:
     - name: HOSTNAME
-      value: helios.id.vn
+      value: "helios.id.vn"
 ```
-> This is a direct way of specifying the env using a plain key-value pair format. There are other ways of setting the env, such as using ConfigMaps and Secrets.
-## Lecture 49: ConfigMaps
-- ConfigMaps are used to pass configuration data in the form of key-value pairs in Kubernetes. 
-- When a pod is created, inject the ConfigMap into the pod so the key-value pairs are available as environment variables for the application hosted inside the container in the pod.
-- There are 2 phases involved in configuring ConfigMaps:
-	1. Create the ConfigMap.
-	2. Inject them into the pod.
-- There are 2 ways of creating a ConfigMap: Imperative and Declarative.
-- Imperative: Without using a ConfigMap definition file (`kubectl create configmap`):
+## Lecture 49: ConfigMaps — 🎯 [CÓ THI CKAD]
+- **Bản chất:** Tách dữ liệu cấu hình không nhạy cảm (`key: value` hoặc nguyên file cấu hình) ra khỏi container image để dễ quản lý và tái sử dụng cho nhiều Pod.
+- **Bước 1: Tạo ConfigMap (Imperative hoặc Declarative)**
 ```bash
+# Imperative (Ưu tiên dùng trong phòng thi)
 kubectl create cm myapp-config \
-	--from-literal=APP_COLOR=blue \
-	--from-literal=APP_STAGE=prod
-	
-kubectl create cm myapp-config \
-	--from-file=myapp_config.properties
+  --from-literal=APP_COLOR=blue \
+  --from-literal=APP_STAGE=prod
+
+kubectl create cm myapp-config --from-file=myapp_config.properties
 ```
-- Declarative: Using a ConfigMap definition file (`kubectl create -f ...`) (AKMD instead of AKMS):
 ```yaml
+# Declarative YAML
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -156,84 +123,60 @@ data:
   APP_COLOR: blue
   APP_STAGE: prod
 ```
-
-```bash
-kubectl create -f myapp-configmap.yaml
-kubectl get cm
-kubectl describe cm myapp-config
-```
-- It's time to configure it with a pod:
+- **Bước 2: Tiêm (Inject) ConfigMap vào Pod (3 cách)**
 ```yaml
 apiVersion: v1
 kind: Pod
 metadata:
   name: nginx
 spec:
+  volumes:
+  - name: myapp-config-volume
+    configMap:
+      name: myapp-config
   containers:
   - name: nginx-pod
     image: nginx
+    # Cách 1: Lấy 1 key lẻ làm biến môi trường
     env:
     - name: APP_STAGE
       valueFrom:
         configMapKeyRef:
           name: myapp-config
           key: APP_STAGE
-```
-> Use 1 key-value pair of the ConfigMap in single env variable.
-
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: nginx
-spec:
-  containers:
-  - name: nginx-pod
-    image: nginx
+    # Cách 2: Lấy toàn bộ các key trong ConfigMap làm biến môi trường
     envFrom:
     - configMapRef:
         name: myapp-config
-```
-> Use entire 1 or many ConfigMaps
-
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: nginx
-spec:
-  containers:
-  - name: nginx-pod
-    image: nginx
-    volumeMounts: 
+    # Cách 3: Mount làm Volume (Mỗi key trong ConfigMap tạo thành 1 file trong thư mục mountPath)
+    volumeMounts:
     - name: myapp-config-volume
       mountPath: /opt/myapp-config-volumes
-  volumes:
-  - name: myapp-config-volume
-    configMap:
-      name: myapp-config
 ```
-> Create a ConfigMap volume and mount it to the containers.
-## Lecture 50 & 51: Lab - ConfigMaps
+## Lecture 50 & 51: Lab - ConfigMaps — 🎯 [CÓ THI CKAD]
 ```bash
+kubectl get cm
+kubectl describe cm myapp-config
 kubectl get po webapp-color -o yaml > pod.yaml
 ```
-## Lecture 52: Secrets
-- Secrets are used to store sensitive information like passwords or keys. They are similar to ConfigMaps, except that they are stored in an encoded or hashed format.
-- There are 2 phases involved in working with Secrets:
-	1. Create the Secrets.
-	2. Inject them into the pod.
-- There are 2 ways of creating a Secrets: Imperative and Declarative.
-- Imperative: Without using a Secrets definition file (`kubectl create secret generic):
+## Lecture 52: Secrets — 🎯 [CÓ THI CKAD]
+- **Bản chất:** Lưu trữ thông tin nhạy cảm (password, token, key, TLS cert, Docker registry credentials) dưới dạng mã hóa **Base64**.
+- **Bước 1: Tạo Secret (Imperative hoặc Declarative)**
 ```bash
+# Imperative (Khuyên dùng khi thi — K8s tự động encode base64)
 kubectl create secret generic my-secret \
-	--from-literal=API_KEY=apikey_abcdef \
-	--from-literal=APP_STAGE=prod
-	
-kubectl create cm myapp-config \
-	--from-file=my_secret.properties
+  --from-literal=API_KEY=apikey_abcdef \
+  --from-literal=APP_STAGE=prod
+
+kubectl create secret generic my-secret --from-file=my_secret.properties
+kubectl create secret tls my-tls --cert=cert.crt --key=cert.key
+kubectl create secret docker-registry regcred --docker-server=<url> --docker-username=<user> --docker-password=<pass>
+
+# Mã hóa / Giải mã thủ công với tham số -n (bắt buộc có -n để không bị dư ký tự xuống dòng \n)
+echo -n "myapikey" | base64
+echo -n "YXBpa2V5X2FiY2RlZg==" | base64 -d
 ```
-- Declarative: Using a Secrets definition file (`kubectl create -f ...`) (AKMD instead of AKMS). While creating a Secret with a declarative approach, you must specify the secret values in a hashed format by using `echo -n "myapikey" | base64` and `echo -n "myapikey" | base64 -d` to decode:
+- **Declarative YAML:** Dùng `data` (giá trị bắt buộc đã encode base64) hoặc `stringData` (ghi trực tiếp plain text, K8s sẽ tự chuyển thành base64 khi lưu):
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -241,289 +184,104 @@ metadata:
   name: myapp-secret
 data:
   API_KEY: YXBpa2V5X2FiY2RlZg==
-  APP_STAGE: cHJvZA==
+stringData:
+  APP_STAGE: prod
 ```
-
-```bash
-kubectl get secret
-kubectl describe secret myapp-secret
-```
-
+- **Bước 2: Tiêm (Inject) Secret vào Pod (3 cách)**
 ```yaml
 apiVersion: v1
 kind: Pod
 metadata:
   name: nginx
 spec:
+  volumes:
+  - name: myapp-secret-volume
+    secret:
+      secretName: myapp-secret
   containers:
   - name: nginx-pod
     image: nginx
+    # Cách 1: Lấy 1 key lẻ làm biến môi trường
     env:
     - name: API_KEY
       valueFrom:
         secretKeyRef:
           name: myapp-secret
           key: API_KEY
-```
-> Use 1 key-value pair of Secret in single env variable.
-
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: nginx
-spec:
-  containers:
-  - name: nginx-pod
-    image: nginx
+    # Cách 2: Lấy toàn bộ các key làm biến môi trường
     envFrom:
     - secretRef:
         name: myapp-secret
-```
-> Use entire 1 or many Secrets
-
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: nginx
-spec:
-  containers:
-  - name: nginx-pod
-    image: nginx
+    # Cách 3: Mount làm Volume (Mỗi attribute trong Secret tạo thành 1 file có nội dung đã giải mã sẵn)
     volumeMounts:
     - name: myapp-secret-volume
       mountPath: /opt/my-secret-volumes
       readOnly: true
-  volumes:
-  - name: myapp-secret-volume
-    secret:
-      secretName: myapp-secret
 ```
-> If you were to mount the secret as a volume in the pod, each attribute in the secret is created as a file with the value of the secret as its content.
-
 ```bash
-# Inside the container
-ls /opt/my-secret-volumes
-cat /opt/my-secret-volumes/API_KEY
+# Kiểm tra file Secret đã mount bên trong container:
+kubectl exec nginx -- ls /opt/my-secret-volumes
+kubectl exec nginx -- cat /opt/my-secret-volumes/API_KEY
 ```
-## Lecture 53: A Quick Note About Secrets!
-Remember that secrets encode data in base64 format. Anyone with the base64 encoded secret can easily decode it. As such the secrets can be considered as not very safe.
-
-The concept of safety of the Secrets is a bit confusing in Kubernetes. The [kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/secret) page and a lot of blogs out there refer to secrets as a "safer option" to store sensitive data. They are safer than storing in plain text as they reduce the risk of accidentally exposing passwords and other sensitive data. In my opinion it's not the secret itself that is safe, it is the practices around it. 
-
-Secrets are not encrypted, so it is not safer in that sense. However, some best practices around using secrets make it safer. As in best practices like:
-
-- Not checking-in secret object definition files to source code repositories.
-- [Enabling Encryption at Rest](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/) for Secrets so they are stored encrypted in ETCD. 
-  
-Also the way kubernetes handles secrets. Such as:
-
-- A secret is only sent to a node if a pod on that node requires it.
-- kubelet stores the secret into a tmpfs so that the secret is not written to disk storage.
-- Once the Pod that depends on the secret is deleted, kubelet will delete its local copy of the secret data as well.
-
-Read about the [protections](https://kubernetes.io/docs/concepts/configuration/secret/#protections) and [risks](https://kubernetes.io/docs/concepts/configuration/secret/#risks) of using secrets [here](https://kubernetes.io/docs/concepts/configuration/secret/#risks)
-
-Having said that, there are other better ways of handling sensitive data like passwords in Kubernetes, such as using tools like Helm Secrets, [HashiCorp Vault](https://www.vaultproject.io/). I hope to make a lecture on these in the future.
-## Lecture 54 & 56: Lab - Secrets
+## Lecture 53: A Quick Note About Secrets! — 💡 [NGOÀI ĐỀ THI — Đáng biết]
+- Base64 chỉ là **encoding** (mã hóa định dạng), không phải **encryption** (mã hóa bảo mật) — ai có quyền đọc Secret đều giải mã được bằng `base64 -d`.
+- **Cơ chế bảo vệ Secret nội tại của Kubernetes:**
+  - Secret chỉ được phân phối tới Worker Node nếu trên Node đó có Pod cần dùng nó.
+  - `kubelet` lưu Secret được mount vào bộ nhớ tạm RAM (**`tmpfs`**), không bao giờ ghi xuống ổ cứng của Worker Node, và xóa ngay lập tức khi Pod bị xóa.
+- **Best Practices trong thực tế:** Không commit file YAML chứa Secret lên Git; bật **Encryption at Rest** cho `etcd`; phân quyền RBAC chặt chẽ; hoặc dùng giải pháp quản lý Secret chuyên dụng (HashiCorp Vault, External Secrets Operator, Secrets Store CSI Driver).
+## Lecture 54 & 56: Lab - Secrets — 🎯 [CÓ THI CKAD]
 ```bash
 echo -n "password123" | base64
+kubectl get secret myapp-secret -o jsonpath='{.data.API_KEY}' | base64 -d
 ```
-## Lecture 55: Additional Resource
-Dive deep into the world of Kubernetes security with our comprehensive guide to Secret Store CSI Driver.
+## Lecture 55: Additional Resource (Secret Store CSI Driver) — 👀 [XEM QUA]
+- Tài liệu mở rộng về tích hợp kho lưu trữ Secret bên ngoài qua CSI Driver: [https://www.youtube.com/watch?v=MTnQW9MxnRI](https://www.youtube.com/watch?v=MTnQW9MxnRI)
 
-[https://www.youtube.com/watch?v=MTnQW9MxnRI](https://www.youtube.com/watch?v=MTnQW9MxnRI)
-## Lecture 57: Demo: Encrypting Secret Data at rest
-### Install etcd tools
-```bash
-export ETCD_VER=v3.7.1
-export DOWNLOAD_URL=https://github.com/etcd-io/etcd/releases/download
+## Lecture 57: Demo: Encrypting Secret Data at rest — 👀 [XEM QUA — Thuộc CKA, không thi trong CKAD]
+> [!NOTE]
+> Mặc định dữ liệu Secret lưu trong cơ sở dữ liệu `etcd` ở dạng chưa mã hóa. Phần cấu hình `EncryptionConfiguration` cho `kube-apiserver` và truy vấn bằng `etcdctl` dưới đây thuộc đề cương **CKA/CKS**, bạn chỉ cần xem qua để hiểu cơ chế, **không cần luyện cho CKAD**.
+- **Tóm tắt quy trình bật Encryption at Rest trên Controlplane:**
+  1. Kiểm tra `kube-apiserver` đã bật cờ `--encryption-provider-config` chưa:
+     ```bash
+     grep "encryption-provider-config" /etc/kubernetes/manifests/kube-apiserver.yaml
+     ```
+  2. Tạo khóa ngẫu nhiên 32-byte base64 (`head -c 32 /dev/urandom | base64`) và viết file `/etc/kubernetes/enc/enc.yaml`:
+     ```yaml
+     apiVersion: apiserver.config.k8s.io/v1
+     kind: EncryptionConfiguration
+     resources:
+       - resources: ["secrets"]
+         providers:
+           - aescbc:
+               keys:
+                 - name: key1
+                   secret: <BASE64_ENCODED_32_BYTE_KEY>
+           - identity: {} # Cho phép đọc các secret cũ chưa được mã hóa
+     ```
+  3. Mount thư mục `/etc/kubernetes/enc` (`hostPath`) vào static Pod `/etc/kubernetes/manifests/kube-apiserver.yaml` và thêm cờ `--encryption-provider-config=/etc/kubernetes/enc/enc.yaml`.
+  4. Kiểm tra dữ liệu đã mã hóa trong `etcd`:
+     ```bash
+     etcdctl --endpoints=https://localhost:2379 \
+       --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+       --cert=/etc/kubernetes/pki/etcd/server.crt \
+       --key=/etc/kubernetes/pki/etcd/server.key \
+       get /registry/secrets/default/my-new-secrets | hexdump -C
+     ```
 
-rm -f ~/etcd-${ETCD_VER}-linux-amd64.tar.gz
+## Lecture 58: Pre-requisite - Security in Docker — 💡 [NGOÀI ĐỀ THI — Đáng biết]
+- **Process Isolation (Cô lập tiến trình):** Container và Host dùng chung một Linux Kernel nhưng được cô lập qua **Linux Namespaces**. Một tiến trình chạy trong container thực chất là một tiến trình chạy trên Host (nhìn thấy được từ Host với một PID khác), nhưng bên trong container chỉ nhìn thấy các tiến trình thuộc namespace của chính nó.
+- **Users:** Mặc định Docker chạy tiến trình bên trong container dưới quyền `root` (`uid=0`). Để chạy bằng non-root user:
+  - Lúc chạy: `docker run --user=1001 ubuntu sleep 3600`
+  - Lúc đóng gói trong `Dockerfile`: Khai báo chỉ thị `USER 1001`.
+- **Linux Capabilities (`/usr/include/linux/capability.h`):** Thay vì trao toàn quyền `root` tối cao, Linux chia nhỏ quyền hệ thống thành các `capabilities` (như `NET_ADMIN`, `SYS_TIME`, `MAC_ADMIN`). Mặc định container chạy với tập quyền bị giới hạn để không làm hại Host. Có thể thêm bằng `--cap-add`, gỡ bằng `--cap-drop`, hoặc mở toàn bộ quyền bằng `--privileged`.
 
-curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o ~/etcd-${ETCD_VER}-linux-amd64.tar.gz
-
-tar xzvf ~/etcd-${ETCD_VER}-linux-amd64.tar.gz -C ~
-rm -f ~/etcd-${ETCD_VER}-linux-amd64.tar.gz
-
-chmod +x ~/etcd-${ETCD_VER}-linux-amd64/etcd*
-
-sudo mv ~/etcd-${ETCD_VER}-linux-amd64/etcd* /usr/local/bin/
-
-rm -rf ~/etcd-${ETCD_VER}-linux-amd64
-```
-
-### Health check the etcd
-```bash
-etcdctl \
-  --endpoints=https://localhost:2379 \
-  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
-  --cert=/etc/kubernetes/pki/etcd/server.crt \
-  --key=/etc/kubernetes/pki/etcd/server.key \
-  endpoint health
-```
-
-### Get secret on the etcd
-```bash
-etcdctl \
-  --endpoints=https://localhost:2379 \
-  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
-  --cert=/etc/kubernetes/pki/etcd/server.crt \
-  --key=/etc/kubernetes/pki/etcd/server.key \
-  get /registry/secrets/default/my-secrets
-
-etcdctl \
-  --endpoints=https://localhost:2379 \
-  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
-  --cert=/etc/kubernetes/pki/etcd/server.crt \
-  --key=/etc/kubernetes/pki/etcd/server.key \
-  get /registry/secrets/default/my-secrets | hexdump -C
-```
-### Encryption at rest in etcd
-#### 1. Check if encryption at rest is enabled
-```bash
-ps -aux | grep kube-api | grep "encryption-provider-config"
-
-cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep -e "--encryption-provider-config"
-```
-#### 2. Generate a 32-byte random key and base64 encode it
-```bash
-head -c 32 /dev/urandom | base64
-```
-#### 3. Create a new encryption configuration file
-```yaml
----
-# ./encryption-config.yaml
-apiVersion: apiserver.config.k8s.io/v1
-kind: EncryptionConfiguration
-resources:
-  - resources:
-      - secrets
-    providers:
-      - aescbc:
-          keys:
-            - name: key1
-              # See the following text for more details about the secret value
-              secret: <BASE 64 ENCODED SECRET>
-      - identity: {} # this fallback allows reading unencrypted secrets;
-                     # for example, during initial migration
-```
-#### 4. Save the new encryption config file to `/etc/kubernetes/enc/enc.yaml` on the control-plane node
-```bash
-mkdir -p /etc/kubernetes/enc
-
-docker cp encryption-config.yaml lab-control-plane:/etc/kubernetes/enc/enc.yaml
-```
-#### 5. Edit the manifest for the `kube-apiserver` static pod: `/etc/kubernetes/manifests/kube-apiserver.yaml`
-```bash
-docker cp lab-control-plane:/etc/kubernetes/manifests/kube-apiserver.yaml ./kube-apiserver.yaml
-
-vim ./kube-apiserver.yaml
-
-docker cp ./kube-apiserver.yaml lab-control-plane:/etc/kubernetes/manifests/kube-apiserver.yaml
-```
-
-```yaml
----
-#
-# This is a fragment of a manifest for a static Pod.
-# Check whether this is correct for your cluster and for your API server.
-#
-apiVersion: v1
-kind: Pod
-metadata:
-  annotations:
-    kubeadm.kubernetes.io/kube-apiserver.advertise-address.endpoint: 10.20.30.40:443
-  creationTimestamp: null
-  labels:
-    app.kubernetes.io/component: kube-apiserver
-    tier: control-plane
-  name: kube-apiserver
-  namespace: kube-system
-spec:
-  containers:
-  - command:
-    - kube-apiserver
-    ...
-    - --encryption-provider-config=/etc/kubernetes/enc/enc.yaml  # add this line
-    volumeMounts:
-    ...
-    - name: enc                           # add this line
-      mountPath: /etc/kubernetes/enc      # add this line
-      readOnly: true                      # add this line
-    ...
-  volumes:
-  ...
-  - name: enc                             # add this line
-    hostPath:                             # add this line
-      path: /etc/kubernetes/enc           # add this line
-      type: DirectoryOrCreate             # add this line
-  ...
-```
-#### 6. Restart the API server and check the encryption status
-```bash
-mv /etc/kubernetes/manifests/kube-apiserver.yaml /tmp/
-
-# wait 5 seconds
-crictl ps | grep kube-apiserver
-
-mv /tmp/kube-apiserver.yaml /etc/kubernetes/manifests/
-
-# Checking
-crictl ps | grep kube-apiserver
-ps -aux | grep kube-api | grep "encryption-provider-config"
-cat /etc/kubernetes/manifests/kube-apiserver.yaml | grep -e "--encryption-provider-config"
-```
-#### 7. Create another secret for testing
-```bash
-kubectl create secret generic my-new-secrets --from-literal=API_KEY=key_abcxyz
-
-etcdctl \
-  --endpoints=https://localhost:2379 \
-  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
-  --cert=/etc/kubernetes/pki/etcd/server.crt \
-  --key=/etc/kubernetes/pki/etcd/server.key \
-  get /registry/secrets/default/my-new-secrets | hexdump -C
-  
-etcdctl \
-  --endpoints=https://localhost:2379 \
-  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
-  --cert=/etc/kubernetes/pki/etcd/server.crt \
-  --key=/etc/kubernetes/pki/etcd/server.key \
-  get /registry/secrets/default/my-new-secrets | xxd
-  
-etcdctl \
-  --endpoints=https://localhost:2379 \
-  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
-  --cert=/etc/kubernetes/pki/etcd/server.crt \
-  --key=/etc/kubernetes/pki/etcd/server.key \
-  get /registry/secrets/default/my-new-secrets | od -A x -t x1z -v
-```
-## Lecture 58: Pre-requisite - Security in Docker
-### Process Isolation
-- Containers and the hosts share the same kernel.
-- Containers are isolated using namespaces in Linux. The host has a namespace and the containers have their own namespace. All the processes run by the containers are in fact run on the host itself, but in their own namespace.
-- The Docker container is in its own namespace and it can see its own processes. It cannot see anything outside of it or in any other namespace. For the Docker host, all processes of its own, as well as those in the child namespaces are visible as just another process in the system. The same processes can have different process IDs in different namespaces.
-### Users
-- The Docker host has a set of users: a root user, as well as a number of non-root users. By default, Docker run processes within containers as the root user.
-```bash
-docker run --user=1001 ubuntu sleep 3600
-docker run --user=root ubuntu sleep 3600
-```
-- One way to enforce user security is to have the `USER` instruction defined in the Docker image itself at the time of creation. Then we can run this image without specifying the user ID, and the process will be run with the user ID 1001:
-```dockerfile
-FROM ubuntu
-
-USER 1001
-```
-- You can control and limit what capabilities are made available to a user at `/usr/include/linux/capability.h`. By default, Docker runs a container with a limited set of capabilities, and so the processes running within the container do not have the privileges to reboot the host or perform operations that can disrupt the host or other containers running on the same host.
-- If you wish to override this behavior and provide additional privileges than what is available, use the `--cap-add [OPTION]` in the `docker run` command. You can drop privileges as well using the `--cap-drop [OPTION]`, or in case you wish to run the container with all privileges enabled, use the `--privileged` flag.
-## Lecture 59: Security Contexts
-- Containers are encapsulated in pods. You can choose to configure the security settings at a container level or at a pod level.![[Pasted image 20260804115419.png]]
-- If you configure it at a pod level, the settings will carry over to all containers within the pod. 
-- If you configure it at both the pod and the container, the settings on the container will override the settings on the pod.
-- To configure security context on the container (pod level), add a field called securityContext under the spec section of the pod.
+## Lecture 59: Security Contexts — 🎯 [CÓ THI CKAD]
+![[Pasted image 20260804115419.png]]
+- **Bản chất:** Định nghĩa các thiết lập bảo mật ở **cấp Pod** (`spec.securityContext` — áp dụng chung cho mọi container trong Pod) hoặc ở **cấp Container** (`spec.containers[*].securityContext` — ghi đè thiết lập của cấp Pod).
+- **Điểm bẫy phòng thi cực kỳ quan trọng:**
+  - `runAsUser`, `runAsGroup`, `runAsNonRoot` có thể đặt ở **cả cấp Pod lẫn cấp Container**.
+  - `fsGroup` chỉ đặt ở **cấp Pod**.
+  - **`capabilities`**, **`privileged`**, **`allowPrivilegeEscalation`**, **`readOnlyRootFilesystem`** **CHỈ ĐƯỢC ĐẶT Ở CẤP CONTAINER** (`spec.containers[*].securityContext`). Đặt nhầm ở cấp Pod sẽ báo lỗi khi `kubectl apply`.
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -532,40 +290,41 @@ metadata:
 spec:
   securityContext:
     runAsUser: 1001
-  containers:
-  - name: ubuntu
-    image: ubuntu
-    command: ["sleep", "3600"]
-```
-- To set the same configuration on the container level, move the container specification to containers section
-- To add capabilities, use capabilities option and specify a list of capabilities to add to the pod.
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: web-pod
-spec:
+    runAsGroup: 3000
+    fsGroup: 2000
   containers:
   - name: ubuntu
     image: ubuntu
     command: ["sleep", "3600"]
     securityContext:
       runAsUser: 1001
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
       capabilities:
-        add: ["MAC_ADMIN"]
+        add: ["MAC_ADMIN", "NET_ADMIN"]
+        drop: ["ALL"]
 ```
-## Lecture 60 & 61: Lab - Security Contexts
+## Lecture 60 & 61: Lab - Security Contexts — 🎯 [CÓ THI CKAD]
 ```bash
-whoami
 kubectl exec ubuntu-sleeper -- whoami
+kubectl exec ubuntu-sleeper -- id
 ```
-## Lecture 62: Resource Requirements
+
+## Lecture 62: Resource Requirements — 🎯 [CÓ THI CKAD]
+- **Bản chất `requests` vs `limits`:**
+  - **`requests`:** Lượng tài nguyên tối thiểu được đảm bảo cho container. `kube-scheduler` dựa vào `requests` để chọn Node có đủ dung lượng trống.
+  - **`limits`:** Ngưỡng tối đa container được phép sử dụng:
+    - Nếu vượt **CPU limit**: Hệ thống sẽ điều tiết/bóp băng thông CPU (**Throttling**), container bị chậm lại nhưng không bị giết.
+    - Nếu vượt **Memory limit**: Container vượt quá giới hạn RAM liên tục sẽ bị Kernel chấm dứt ngay lập tức với lỗi **OOMKilled (Out Of Memory)** (Exit Code `137`).
+- **Quy đổi đơn vị:**
+  - **CPU:** `1` CPU = `1` vCPU (AWS) = `1` Core (GCP/Azure) = `1` Hyperthread = **`1000m`** (millicores). Có thể viết `0.1` hoặc `100m` (nhỏ nhất là `1m`).
+  - **Memory:** Hệ thập phân (`1M` = $10^6$ bytes, `1G` = $10^9$ bytes) vs Hệ nhị phân (`1Mi` = $2^{20}$ bytes = $1024^2$ bytes, `1Gi` = $2^{30}$ bytes = $1024^3$ bytes).
 ```yaml
 apiVersion: v1
 kind: Pod
 metadata:
   name: nginx
-  label:
+  labels:
     name: nginx
 spec:
   containers:
@@ -573,55 +332,41 @@ spec:
     image: nginx
     ports:
     - containerPort: 8080
-    resouces:
+    resources:
       requests:
         memory: "1Gi"
-        cpu: 2
-```
-- You need to add a section called resources, under which add requests and specify the new value of memory and CPU usage.
-- When the pod gets placed on a node, the pod gets a guaranteed amount of resources available for it.
-- You can specify the CPU as low as 0.1, and can also be expressed as 100m, where m stands for milli, and you can go as low as 1m, but now lower than that.
-- 1 count of CPU is equivalent to 1 vCPU so that is also:
-	- 1 vCPU in AWS
-	- 1 GCP Core
-	- 1 Azure Core
-	- 1 Hyperthread
-- Similarly with memory, you could specify 256Mi using the Mi suffix, or the same value in memory bytes like `268435456`, or like 256M:
-	- 1G = 1000000000 bytes
-	- 1Gi = 1073741824 bytes (1024 x 1024 x 1024 x 1)
-- By default, a container has no limit to the resources it can consume on a node. You can specify the limits under the limits section.
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: nginx
-  label:
-    name: nginx
-spec:
-  containers:
-  - name: nginx-pod
-    image: nginx
-    ports:
-    - containerPort: 8080
-    resouces:
-      requests:
-        memory: "1Gi"
-        cpu: 2
+        cpu: "500m"
       limits:
-        memory: "2G"
-        cpu: "4000m"
+        memory: "2Gi"
+        cpu: "2000m"
 ```
-- When a pod tries to exceed resources beyond its specified limit:
-	- CPU: The system throttles the CPU so that it does not go beyond the specified limit. A container cannot use more GPU resources than its limit.
-	- Memory: A container can use more memory resources than its limit, so if a pod tries to consume more memory than its limit constantly, the pod will be terminated with an Out of Memory (OOM) error in the logs or in the output of the describe command when you run it.
-### Default Configuration
+### Quản lý mặc định và hạn mức ở cấp Namespace (`LimitRange` & `ResourceQuota`)
 ![[Pasted image 20260804143330.png]]
 ![[Pasted image 20260804143545.png]]
-- LimitRange can help you define default values to be set for containers in pods that are created without a request or limit specified in the Pod definition files. This is applicable at namespace level. These are enforced when a pod is created. So if you create or change a limit range it does not affect existing pods.
 ![[Pasted image 20260804144021.png]]
-> Not recommended
-
-- A ResourceQuota is a namespace level object that can be created to set hard limits for requests and limits.
+- **`LimitRange`:** Áp dụng các giá trị mặc định (`default` cho limit và `defaultRequest` cho request) cho các Pod được tạo mới trong Namespace mà không tự khai báo `resources`, đồng thời khống chế ngưỡng `min`/`max` cho từng container. (Không ảnh hưởng tới các Pod đã chạy từ trước).
+```yaml
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: cpu-mem-limit-range
+spec:
+  limits:
+  - default:
+      cpu: "500m"
+      memory: "512Mi"
+    defaultRequest:
+      cpu: "200m"
+      memory: "256Mi"
+    max:
+      cpu: "1"
+      memory: "1Gi"
+    min:
+      cpu: "100m"
+      memory: "100Mi"
+    type: Container
+```
+- **`ResourceQuota`:** Đặt tổng hạn mức cứng (`hard` limit) cho toàn bộ tài nguyên được phép tiêu thụ trong một Namespace.
 ```yaml
 apiVersion: v1
 kind: ResourceQuota
@@ -635,29 +380,27 @@ spec:
     limits.memory: "4Gi"
     pods: "2"
 ```
-## Lecture 63 & 64: Lab - Resource Requirements
-## Lecture 65: Service Account
-### Mục tiêu của bài
-
-Sau bài này, bạn cần trả lời được một câu hỏi:
-
-> Pod này sẽ dùng danh tính nào khi cần làm việc với Kubernetes?
-
-`ServiceAccount` là tài khoản dành cho **ứng dụng chạy trong Kubernetes**. Khác với user account của admin/developer, nó là danh tính mà một Pod có thể sử dụng.
-
-Mỗi namespace luôn có sẵn một ServiceAccount tên là `default`. Nếu Pod không chỉ định gì, nó sẽ dùng `default`.
-
-### Ví dụ đơn giản nhất
-
-Tạo một ServiceAccount riêng tên `my-app`:
-
+## Lecture 63 & 64: Lab - Resource Requirements — 🎯 [CÓ THI CKAD]
 ```bash
-kubectl create serviceaccount my-app
-kubectl get serviceaccount
+kubectl describe quota -n <namespace>
+kubectl describe limitrange -n <namespace>
 ```
 
-Sau đó tạo Pod và bảo nó dùng `my-app`. Đây là YAML đầy đủ, nhưng chỉ có một dòng mới cần chú ý: `serviceAccountName`. Nếu thực hành, chép block này vào file `pod.yaml`.
+## Lecture 65, 66 & 67: Service Account & Labs — 🎯 [CÓ THI CKAD]
+- **Bản chất:** `ServiceAccount` (SA) là **danh tính dành cho ứng dụng/Pod** khi cần giao tiếp với Kubernetes API Server (khác với User Account dành cho quản trị viên/lập trình viên).
+- Mỗi Namespace luôn có sẵn một ServiceAccount tên là `default`. Nếu Pod không chỉ định trường `serviceAccountName`, nó tự động dùng `default`.
+- Trường `serviceAccountName` trên Pod đang chạy không thể sửa trực tiếp (phải xóa tạo lại Pod hoặc sửa trong `spec.template.spec.serviceAccountName` của Deployment).
+```bash
+# Tạo ServiceAccount và kiểm tra
+kubectl create serviceaccount my-app
+kubectl get serviceaccount
 
+# Tạo token ngắn hạn từ CLI (K8s v1.24+)
+kubectl create token my-app
+
+# Gán nhanh ServiceAccount cho một Deployment
+kubectl set serviceaccount deployment/web-dashboard my-app
+```
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -665,40 +408,19 @@ metadata:
   name: my-app-pod
 spec:
   serviceAccountName: my-app
+  automountServiceAccountToken: false # (Tùy chọn) Tắt tự động mount token vào Pod
   containers:
     - name: nginx
       image: nginx
 ```
-
-Áp dụng YAML rồi xem Pod đang dùng ServiceAccount nào:
-
 ```bash
-kubectl apply -f pod.yaml
+# Kiểm tra Pod đang dùng ServiceAccount nào:
 kubectl get pod my-app-pod -o jsonpath='{.spec.serviceAccountName}{"\n"}'
 ```
 
-Kết quả là `my-app`.
-
-### Ý chính
-
-- Không ghi `serviceAccountName` → Pod dùng `default`.
-- Ghi `serviceAccountName: my-app` → Pod dùng `my-app`.
-- Trường này không sửa trực tiếp được trên một Pod đang tồn tại. Muốn đổi, hãy tạo Pod mới hoặc sửa Pod template của Deployment.
-
-> ServiceAccount là **danh tính**, chưa phải phần học về quyền. RBAC/quyền hạn sẽ được học ở phần Security.
-
-### Thông tin thêm (đọc sau)
-
-Kubernetes hiện đại tự xử lý credential ngắn hạn cho Pod dùng ServiceAccount. Ở phía sau, Kubernetes tự thêm một **projected volume** cho Pod. Tạm hiểu nó là một “thư mục được Kubernetes chuẩn bị sẵn”, gom các thông tin Pod cần để nói chuyện với Kubernetes, trong đó có token ngắn hạn của ServiceAccount.
-
-Bạn **chưa cần** tự viết `volume`, `volumeMount` hay cấu hình projected volume ở giai đoạn này. Chỉ cần biết: khi khai báo `serviceAccountName`, Kubernetes tự lo phần đó và tự thay token trước khi nó hết hạn. Ta sẽ quay lại YAML của projected volume sau khi học Storage/Security.
-
-#### Ví dụ minh họa projected volume (chưa cần ghi nhớ)
-
-Ví dụ dưới đây là cách **tự khai báo** projected volume khi ứng dụng cần một vị trí token riêng. `automountServiceAccountToken: false` tắt phần tự thêm mặc định, để ví dụ chỉ có đúng một projected volume ta đang xem.
-
-`projected-token-pod.yaml`:
-
+### 💡 [NGOÀI ĐỀ THI — Đáng biết]: Cơ chế Projected Volume cho ServiceAccount Token (K8s 1.24+)
+- Trước K8s v1.24, mỗi khi tạo ServiceAccount, K8s tự tạo kèm một `Secret` chứa token không thời hạn. Từ **K8s v1.24+**, hành vi này bị loại bỏ để tăng bảo mật: K8s tự động gắn một **Projected Volume** vào Pod, cung cấp một token có thời hạn (`serviceAccountToken`) và tự động xoay vòng (rotate) trước khi hết hạn.
+- Nếu ứng dụng cần tự cấu hình đường dẫn và thời hạn token riêng bằng `projected` volume:
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -724,70 +446,28 @@ spec:
               expirationSeconds: 3600
 ```
 
-Chỉ cần đọc ý nghĩa tổng quát của ba phần này:
+## Lecture 68: Stay Updated! — 👀 [XEM QUA]
+- Các kênh thông tin cập nhật khóa học của giảng viên.
 
-- `volumes`: Kubernetes chuẩn bị một nguồn dữ liệu tên `service-account-token`.
-- `volumeMounts`: container nhìn thấy nguồn đó như một thư mục tại `/var/run/secrets/tokens`.
-- `serviceAccountToken`: Kubernetes đặt token ngắn hạn vào file `token` trong thư mục đó và tự xoay token.
-
-Bạn có thể chạy thử sau khi đã tạo ServiceAccount `my-app`. Lệnh dưới đây không in nội dung token:
-
+## Lecture 69, 70 & 71: Taints and Tolerations & Labs — 🎯 [CÓ THI CKAD]
+- **Bản chất:**
+  - **`Taint` (Vết bẩn)** được gắn trên **Node** để đẩy lùi các Pod không mong muốn.
+  - **`Toleration` (Sự dung thứ)** được khai báo trên **Pod** để cho phép Pod bước qua rào cản Taint đó.
+- **3 hiệu ứng `effect` của Taint:**
+  1. `NoSchedule`: Pod mới không có Toleration khớp sẽ **không được lập lịch** lên Node này (các Pod đã chạy sẵn trên Node từ trước không bị ảnh hưởng).
+  2. `PreferNoSchedule`: Hệ thống cố gắng tránh xếp Pod lên Node này, nhưng nếu cụm hết chỗ trống thì vẫn có thể xếp vào.
+  3. `NoExecute`: Không lập lịch Pod mới, đồng thời **trục xuất (evict/xóa) ngay lập tức** các Pod đang chạy sẵn trên Node nếu chúng không có Toleration tương ứng.
 ```bash
-kubectl apply -f projected-token-pod.yaml
-kubectl wait --for=condition=Ready pod/projected-token-demo --timeout=120s
-
-# Xem tên file và độ dài token, không hiển thị credential.
-kubectl exec projected-token-demo -- ls /var/run/secrets/tokens
-kubectl exec projected-token-demo -- sh -c 'wc -c < /var/run/secrets/tokens/token'
-
-kubectl delete -f projected-token-pod.yaml
-```
-
-Tài liệu cũ có thể nói rằng tạo ServiceAccount sẽ tự tạo một Secret token dài hạn. Đó là hành vi cũ trước Kubernetes v1.24, không phải cách mặc định hiện nay.
-## Lecture 66 & 67: Lab - Service Account
-Thực hành bằng đúng hai YAML ngắn sau: chép mỗi block vào file có tên ở trên block.
-`serviceaccount.yaml`:
-```yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: my-app
-```
-
-`pod.yaml`:
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: my-app-pod
-spec:
-  serviceAccountName: my-app
-  containers:
-    - name: nginx
-      image: nginx
-```
-
-1. Áp dụng hai file: `kubectl apply -f serviceaccount.yaml` rồi `kubectl apply -f pod.yaml`.
-2. Xem ServiceAccount của Pod: `kubectl get pod my-app-pod -o jsonpath='{.spec.serviceAccountName}{"\n"}'`.
-3. Xóa cả hai tài nguyên khi xong: `kubectl delete -f pod.yaml` và `kubectl delete -f serviceaccount.yaml`.
-## Lecture 68: Stay Updated!
-**To stay up to date about our new courses and discussions:**
-
-1. Follow me on Twitter: [@mmumshad](https://twitter.com/mmumshad)
-2. Subscribe to our [Youtube Channel](https://www.youtube.com/user/mmumshad?sub_confirmation=1)
-3. Join our [Facebook Group](https://www.facebook.com/kodekloudtraining)
-## Lecture 69: Taints and Tolerations
-- Taints and Tolerations are used to set restrictions on what pods can be scheduled on a node.
-- When the pods are created, Kubernetes Scheduler tries to place these pods on the worker nodes.
-- Taints are set on nodes and tolerations are set on pods.
-- The `taint-effect`defines what would happen to the pods if they do not tolerate the taint. There are 3 taint effect:
-	- NoSchedule: The pods will not be scheduled on the node.
-	- PreferNoSchedule: The system will try to avoid placing a pod on the node, but that is not guaranteed.
-	- NoExecute: New pods will not be scheduled on the node and existing pods on the node if any will be evicted if they do not tolerate the taint. These pods may have been scheduled on the node before the taint was applied to the node.
-```bash
+# Gán Taint lên Node
 kubectl taint nodes mynode app=nginx:NoSchedule
-```
 
+# Kiểm tra Taint trên Node
+kubectl describe node node01 | grep -i taint
+
+# Gỡ Taint khỏi Node (thêm dấu trừ - ở cuối câu lệnh)
+kubectl taint nodes mynode app=nginx:NoSchedule-
+kubectl taint nodes controlplane node-role.kubernetes.io/control-plane:NoSchedule-
+```
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -804,24 +484,17 @@ spec:
     effect: "NoSchedule"
 ```
 > [!CAUTION]
-> Taints and Tolerations does not tell the pod to go to a particular node. Instead, it tells the node to only accept pods with certain tolerations. If your want to restrict a pod to certain node, it is achieved through another concept called as node affinity.
+> **Điểm bẫy cốt lõi:** Taints & Tolerations **không ép** Pod phải đi vào một Node cụ thể; nó chỉ giúp Node từ chối các Pod không có Toleration. Một Pod có Toleration vẫn có thể được Scheduler xếp sang bất kỳ Node bình thường nào khác. Nếu muốn hướng Pod về đúng một Node, phải dùng `nodeSelector` hoặc `nodeAffinity`.
+> - Trên **Master/Controlplane Node**, K8s tự động gắn sẵn taint `node-role.kubernetes.io/control-plane:NoSchedule` để các Pod ứng dụng không nhảy vào chạy chung với các thành phần quản trị.
 
-> [!INFO]
-> The scheduler does not schedule any pods on the master node. When the Kubernetes cluster is first setup, a taint is set on the master node automatically that prevents any pods from being scheduled on this node. You can modify this. However, a best practice is to not deploy application workloads on a master server.
+## Lecture 72: Node Selectors — 🎯 [CÓ THI CKAD]
+- **Bản chất:** Cách đơn giản nhất để giới hạn Pod chỉ được chạy trên các Node có nhãn (`label`) trùng khớp.
 ```bash
-kubectl describe node lab-control-plane | grep Taint
+# Bước 1: Gán label cho Node
+kubectl label node mynode size=Large
 ```
-## Lecture 70 & 71: Lab - Taints and Tolerations
-```bash
-kubectl describe no node01 | grep Taint
-kubectl taint no controlplane node-role.kubernetes.io/control-plane:NoSchedule-
-```
-## Lecture 72: Node Selectors Logging
-```bash
-kubectl label no mynode size=Large
-```
-
 ```yaml
+# Bước 2: Khai báo nodeSelector trong Pod
 apiVersion: v1
 kind: Pod
 metadata:
@@ -831,22 +504,18 @@ spec:
   - image: nginx
     name: nginx-app
   nodeSelector:
-    size: Large # Refer to labels assigned to the nodes
+    size: Large # Tham chiếu tới label đã gán trên Node
 ```
-### Trường hợp A: Không có Node nào có label `size=Large`
-- **Cơ chế Scheduler:** Ở bước lọc Node (**Filtering / Predicates**), Kube-scheduler duyệt qua tất cả các Node trong cluster. Do `nodeSelector` yêu cầu cứng (Hard constraint), tất cả các Node không có nhãn `size=Large` sẽ bị **loại ngay lập tức**.
-- **Kết quả:** Scheduler không tìm thấy Node hợp lệ nào ($0$ Node khả thi). Pod rơi vào trạng thái `Pending`.
-- **Thông báo lỗi trong `kubectl describe pod nginx-app`:** `0/N nodes are available: N node(s) didn't match Pod's node selector.`
-### Trường hợp B: Có Node có label `size=Large` nhưng KHÔNG ĐỦ tài nguyên (CPU/RAM)
-- **Cơ chế Scheduler:**
-    1. Scheduler lọc ra các Node có nhãn `size=Large`.
-    2. Tiếp theo, Scheduler kiểm tra tài nguyên khả dụng (`requests.cpu`, `requests.memory`) của các Node này.
-    3. Tất cả các Node có nhãn `size=Large` đều bị loại ở bước kiểm tra tài nguyên (**Insufficient CPU/Memory**).
-- **Kết quả:** Pod tiếp tục bị giữ ở trạng thái `Pending`.
-- **Thông báo lỗi trong `kubectl describe pod nginx-app`:**  `0/N nodes are available: X Insufficient cpu, Y node(s) didn't match Pod's node selector.`
-## Lecture 73: Node Affinity
-- The primary purpose of node affinity feature is to ensure that pods are hosted on particular nodes.
+- **Giải thích cơ chế Kube-scheduler khi lập lịch với `nodeSelector`:**
+  - **Trường hợp A (Không có Node nào mang nhãn `size=Large`):** Ở bước lọc Node (*Filtering / Predicates*), do `nodeSelector` là điều kiện cứng (Hard constraint), mọi Node không có nhãn `size=Large` đều bị loại $\rightarrow$ Pod giữ trạng thái **`Pending`**. Lệnh `kubectl describe pod` báo: `0/N nodes are available: N node(s) didn't match Pod's node selector.`
+  - **Trường hợp B (Có Node mang nhãn `size=Large` nhưng thiếu CPU/RAM):** Scheduler lọc ra được các Node có nhãn `size=Large`, nhưng ở bước kiểm tra tài nguyên khả dụng (`requests.cpu`, `requests.memory`), các Node này không đủ chỗ trống $\rightarrow$ Pod vẫn **`Pending`**. Lệnh `kubectl describe pod` báo: `0/N nodes are available: X Insufficient cpu, Y node(s) didn't match Pod's node selector.`
+
+## Lecture 73, 74 & 75: Node Affinity & Labs — 🎯 [CÓ THI CKAD]
 ![[Pasted image 20260805154840.png]]
+- **Bản chất:** Khắc phục hạn chế của `nodeSelector` bằng cách hỗ trợ các biểu thức logic linh hoạt (`In`, `NotIn`, `Exists`, `DoesNotExist`, `Gt`, `Lt`) và 2 cấp độ ràng buộc:
+  1. **`requiredDuringSchedulingIgnoredDuringExecution` (Điều kiện cứng):** Bắt buộc phải có Node khớp điều kiện thì Pod mới được lập lịch; nếu không có, Pod ở trạng thái `Pending`.
+  2. **`preferredDuringSchedulingIgnoredDuringExecution` (Điều kiện mềm):** Ưu tiên chọn Node khớp điều kiện (tính điểm theo `weight: 1-100`); nếu không có Node nào thỏa mãn, Pod vẫn được lập lịch lên các Node khác bình thường.
+  - Ý nghĩa vế sau **`IgnoredDuringExecution`**: Một khi Pod đã được xếp lên Node và đang chạy (`Running`), nếu ai đó xóa label trên Node đi thì Pod vẫn tiếp tục chạy bình thường mà không bị đuổi. (Ngược lại, `RequiredDuringExecution` — tính năng tương lai — sẽ trục xuất Pod nếu Node mất label).
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -869,10 +538,9 @@ spec:
           - key: uptime
             operator: NotIn
             values:
-            - Medium
             - Small
           - key: region
-            operator: Exists
+            operator: Exists # Với Exists / DoesNotExist thì không có trường values
       preferredDuringSchedulingIgnoredDuringExecution:
       - weight: 100
         preference:
@@ -882,15 +550,15 @@ spec:
             values:
             - Helios
 ```
-## Lecture 74 & 75: Lab - Node Affinity
-## Lecture 76: Taints & Tolerations vs Node Affinity
-## Lecture 77: Practice Test
-## Lecture 78: Certification Tips - Student Tips
-Make sure you check out these tips and tricks from other students who have cleared the exam:
 
-[https://www.linkedin.com/pulse/my-ckad-exam-experience-atharva-chauthaiwale/](https://www.linkedin.com/pulse/my-ckad-exam-experience-atharva-chauthaiwale/)
+## Lecture 76: Taints & Tolerations vs Node Affinity — 🎯 [CÓ THI CKAD]
+- **Bài toán thiết kế:** Làm thế nào để dành riêng một nhóm Node (VD: `blue`, `red`, `green`) sao cho **chỉ** các Pod cùng màu được phép vào đó, và các Pod cùng màu **bắt buộc** phải vào đúng Node màu của mình (không bị xếp sang Node trắng thông thường)?
+  - Nếu **chỉ dùng Taints & Tolerations**: Node `blue` chặn được Pod `red`/`green` và Pod thường, nhưng bản thân Pod `blue` vẫn có thể bị Scheduler xếp sang Node trắng thông thường (vì Node trắng không có taint).
+  - Nếu **chỉ dùng Node Affinity**: Pod `blue` bắt buộc đi vào Node `blue`, nhưng các Pod trắng thông thường (không khai báo affinity) vẫn có thể bị Scheduler xếp tràn vào Node `blue`.
+  - $\Rightarrow$ **Kết luận:** Để cô lập hoàn toàn 1-1 giữa nhóm Pod và nhóm Node, phải **kết hợp đồng thời cả Taints & Tolerations lẫn Node Affinity**.
 
-[https://medium.com/@harioverhere/ckad-certified-kubernetes-application-developer-my-journey-3afb0901014](https://medium.com/@harioverhere/ckad-certified-kubernetes-application-developer-my-journey-3afb0901014)
-
-[https://github.com/lucassha/CKAD-resources](https://github.com/lucassha/CKAD-resources)
-## Lecture 79: If You Like It, Share It!
+## Lecture 77, 78 & 79: Practice Test & Student Tips — 👀 [XEM QUA]
+- Kinh nghiệm thi thực tế từ các học viên:
+  - [https://www.linkedin.com/pulse/my-ckad-exam-experience-atharva-chauthaiwale/](https://www.linkedin.com/pulse/my-ckad-exam-experience-atharva-chauthaiwale/)
+  - [https://medium.com/@harioverhere/ckad-certified-kubernetes-application-developer-my-journey-3afb0901014](https://medium.com/@harioverhere/ckad-certified-kubernetes-application-developer-my-journey-3afb0901014)
+  - [https://github.com/lucassha/CKAD-resources](https://github.com/lucassha/CKAD-resources)

@@ -10,176 +10,141 @@ tags:
 ---
 # Section 9: Security
 
-## Lecture 138: Kubernetes Security Primitives
-- Let's begin with the hosts that form the cluster itself. Of course, all access to these hosts must be secured: root access disabled, password based authentication disabled, and only **SSH key based authentication** to be made available.
-- The first line of defense is controlling access to the API server itself. We need to make two types of decisions:
-	- **Who can access the cluster?** It is defined by the authentication mechanisms. There are different ways that you can authenticate to the API server certificates, or even integration with external authentication providers like Ldap, and for machines we create service accounts.
-	- **What can they do?** Once they gain access to the cluster, what can they do is defined by authorization mechanisms. Authorization is implemented using role based access controls, where users are associated to groups with specific permissions.
-- All communication with the cluster between the various components such as the etcd cluster, the kube-controller-manager, kube-scheduler, kube-apiserver, as well as those running on the worker nodes such as the kubelet and the kube-proxy, is secured using TLS encryption.
-- Communication between applications within the cluster:
-	- By default, all pods can access all other pods within the cluster. You can restrict access between them using network policies.
-## Lecture 139: Authentication
-- Our focus now is on securing access to the Kubernetes cluster with authentication mechanisms.
-- About the different users that may be accessing the cluster. Security of end users who access the applications deployed on the cluster is managed by the applications themselves internally.
-- Our focus is on users access to the Kubernetes cluster for administrative purposes.
-- Kubernetes does not manage user accounts natively. It relies on an external source, like a file with user details or certificates, or a third party identity service like Ldap to manage these users.
-- You can create and manage service accounts using the Kubernetes API.
-- All user access is managed by the API server. Whether you're accessing the cluster through kube-control tool or the API directly. All of these requests go through the kube-apiserver.
-- The kube API server authenticates the requests before processing it:
-	- You can have usernames and tokens in a static token file. We can optionally have a fourth column with the group details to assign users to specific groups. Similarly, instead of a static password file, you can have a static token file. You can pass the token file as an option token auth file to the kube-apiserver. While authenticating, specify the token as an authorization bearer token to your request.
-	![[Pasted image 20261001170150.png]]
-	- Or you can authenticate using certificates.
-	- And another option is to connect to third party authentication protocols like Ldap, Kerberos, etc..
->[!WARNING]
->Remember that the authentication mechanism that stores usernames, passwords, and tokens in clear text in a static file is not a recommended approach as it is insecure.
->if you were trying this out in a kubeadm setup, you must also consider volume mounts to pass in the auth file, and remember to set up authorization for the new users.
-## Lecture 140: Article on Setting up Basic Authentication (Deprecated)
+> **Phân loại trọng tâm trong Section 9:**
+> - 🎯 **[CÓ THI CKAD — Trọng tâm]:** Thao tác `KubeConfig` & chuyển đổi `Context` (`Lecture 142–144`), phân quyền **RBAC** (`Role`, `ClusterRole`, `RoleBinding`, `ClusterRoleBinding`, `kubectl auth can-i` — `Lecture 147–152`), hiểu **API Groups / API Versions** & sửa lỗi **API Deprecations** (`Lecture 145, 159–162`), và làm việc với **Custom Resource Definitions (CRD)** & **Custom Resources (CR)** (`Lecture 163–164`).
+> - 💡 **[NGOÀI ĐỀ THI — Đáng biết]:** Tổng quan 4 lớp bảo mật K8s (`Authentication`, `Authorization`, `Admission Controllers`, `NetworkPolicy`), sự khác biệt giữa `Mutating` và `Validating` Admission Controllers, và khái niệm `Custom Controllers` / `Operator Framework` (`Lecture 138, 146, 153, 156, 165, 166`).
+> - 👀 **[XEM QUA — Không cần tập trung]:** Cấu hình Static Password/Token File (đã khai tử), tạo chứng chỉ TLS cho User, chỉnh sửa cờ `--enable-admission-plugins` trong `/etc/kubernetes/manifests/kube-apiserver.yaml` (`Lecture 139–141, 154–155, 157–158`) — đây là nội dung quản trị cụm của kỳ thi **CKA**.
 
-## Lecture 141: Important Updates
-Before moving to the “KubeConfig” lecture I would like to share some updates:
-- How to generate certificates for different Kubernetes components and for a user and use them in the Kubernetes cluster is not in the scope of the official CKAD exam.
+## Lecture 138, 139, 140 & 141: Kubernetes Security Primitives & Authentication — 💡 [NGOÀI ĐỀ THI — Đáng biết]
+- **Bức tranh tổng thể bảo mật trong Kubernetes Cluster:**
+  1. **Bảo mật máy chủ (Hosts):** Tắt đăng nhập bằng mật khẩu, khóa quyền truy cập `root` trực tiếp, chỉ cho phép xác thực qua **SSH Key**.
+  2. **Bảo mật giao tiếp nội bộ Controlplane:** Mọi kết nối giữa `kube-apiserver`, `etcd`, `kube-controller-manager`, `kube-scheduler`, `kubelet` và `kube-proxy` đều được mã hóa bằng **TLS**.
+  3. **Bảo mật giao tiếp giữa các Pods:** Mặc định mọi Pod có thể gọi nhau tự do; dùng **Network Policies** để giới hạn luồng mạng giữa các Pod.
+  4. **Kiểm soát truy cập vào `kube-apiserver` (Cửa ngõ chính của Cluster):** Mọi request (từ `kubectl` hay REST API) đều phải đi qua 3 trạm kiểm soát tuần tự:
+     - **Trạm 1 — Authentication (Ai đang truy cập?):**
+       - **Con người (Admins / Developers):** Kubernetes **không** tự quản lý đối tượng `User` trong database của nó (không có lệnh `kubectl create user`), mà dựa vào nguồn xác thực bên ngoài như **Chứng chỉ X509 (Certificates)**, bên thứ 3 (LDAP, Kerberos, OIDC), hoặc Static Token/Password File *(👀 Đã deprecated, không an toàn)*.
+       - **Máy móc / Ứng dụng (Pods / Bots):** Sử dụng **`ServiceAccount`** — được tạo và quản lý trực tiếp bởi Kubernetes API.
+     - **Trạm 2 — Authorization (Được phép làm gì?):** Thực thi qua cơ chế **RBAC** (`Role-Based Access Control`).
+     - **Trạm 3 — Admission Controllers:** Kiểm tra và biến đổi nội dung request trước khi lưu vào `etcd`.
+![[Pasted image 20261001170150.png]]
 > [!INFO]
-These are part of the official CKA exam.
-## Lecture 142: KubeConfig
-- By default, the kubectl tool looks for a file named config under a directory .kube/ under the user's home directory (/home/user/.kube/config). So if you create the kubeconfig file there, you don't have to specify the path to the file explicitly in the kubectl command.
-- The config file has three sections clusters, users, and contexts:
-	- Clusters are the various Kubernetes clusters that you need access to. So you have multiple clusters for development environment or testing environment, or prod, or for different organizations, or on different cloud providers, etc. all those go there.
-	- Users are the user accounts with which you have access to these clusters, for example the admin user, a dev user, a prod producer, etc. these users may have different privileges on different clusters.
-	- Contexts marry these together. Context define which user account will be used to access which cluster.
-> [!INFO]
-> - Remember, you're not creating any new users or configuring any kind of user access or authorization in the cluster with this process, you're using existing users with their existing privileges and defining what user you're going to use to access what cluster.
-> - That way, you don't have to specify the user certificates and server address in each and every kubectl command you run.
-```yaml
-❯ kubectl config view
-apiVersion: v1
-clusters:
-- cluster:
-    certificate-authority-data: DATA+OMITTED
-    server: https://100.123.87.107:6443
-  name: helios-k3s-cluster
-contexts:
-- context:
-    cluster: helios-k3s-cluster
-    user: helios-k3s-cluster
-  name: helios-k3s-cluster
-current-context: helios-k3s-cluster
-kind: Config
-users:
-- name: helios-k3s-cluster
-  user:
-    client-certificate-data: DATA+OMITTED
-    client-key-data: DATA+OMITTED
-    
-❯ kubectl config view --kubeconfig=.kube/config
-apiVersion: v1
-clusters:
-- cluster:
-    certificate-authority-data: DATA+OMITTED
-    server: https://100.123.87.107:6443
-  name: helios-k3s-cluster
-contexts:
-- context:
-    cluster: helios-k3s-cluster
-    user: helios-k3s-cluster
-    namespace: rustdesk
-  name: helios-k3s-cluster
-current-context: helios-k3s-cluster
-kind: Config
-users:
-- name: helios-k3s-cluster
-  user:
-    client-certificate-data: DATA+OMITTED
-    client-key-data: DATA+OMITTED
-```
+> **Lưu ý từ Lecture 141:** Cách khởi tạo chứng chỉ (Certificates) cho các thành phần hệ thống và User thuộc phạm vi kỳ thi **CKA**, **không nằm trong phạm vi đề thi CKAD**.
+
+## Lecture 142, 143 & 144: KubeConfig & Labs — 🎯 [CÓ THI CKAD]
+- **Bản chất:** Thay vì phải gõ kèm đường dẫn chứng chỉ (`--client-certificate`, `--client-key`, `--certificate-authority`) và địa chỉ `--server` ở mọi câu lệnh `kubectl`, ta gom toàn bộ cấu hình kết nối vào file **`KubeConfig`** (mặc định nằm tại **`~/.kube/config`** hoặc khai báo qua biến môi trường `$KUBECONFIG`).
+- **3 thành phần cấu tạo nên file `KubeConfig`:**
+  1. **`clusters`:** Danh sách các cụm Kubernetes cần truy cập (VD: `development`, `production`, `google-k8s`) kèm địa chỉ `server: https://...:6443` và chứng chỉ CA.
+  2. **`users`:** Danh sách các tài khoản người dùng (`admin`, `dev-user`, `prod-user`) kèm khóa/chứng chỉ xác thực tương ứng.
+  3. **`contexts`:** Kết nối (kết hôn) **1 `cluster` + 1 `user`** (và có thể kèm sẵn **1 `namespace`** mặc định).
+  - *Lưu ý:* File `KubeConfig` chỉ dùng để chọn danh tính đã có sẵn nhằm kết nối vào Cluster, chứ bản thân file này không cấp mới quyền hạn trên Cluster.
 ![[Pasted image 20261001175330.png]]
--  To view the current file being used, run the `kubectl config view` command. It lists the cluster's context and users, as well as the current context that is set.
-- To change the context to use another user to access the another cluster, run the `kubecctl config use-context <user>@<cluster>` command.
-## Lecture 143 & 144: Lab - KubeConfig
-```bash
-echo 'export KUBECONFIG="${KUBECONFIG}:/root/my-kube-config"' >> ~/.bashrc && source ~/.bashrc
 
-mv /root/my-kube-config /root/.kube/config
+```yaml
+apiVersion: v1
+kind: Config
+current-context: helios-k3s-cluster # Context đang được kích hoạt mặc định
+clusters:
+- name: helios-k3s-cluster
+  cluster:
+    certificate-authority-data: DATA+OMITTED
+    server: https://100.123.87.107:6443
+contexts:
+- name: helios-k3s-cluster
+  context:
+    cluster: helios-k3s-cluster
+    user: helios-k3s-cluster
+    namespace: rustdesk             # Namespace mặc định khi dùng context này
+users:
+- name: helios-k3s-cluster
+  user:
+    client-certificate-data: DATA+OMITTED
+    client-key-data: DATA+OMITTED
 ```
-## Lecture 145: API Groups
-- One way or the other, either through the kube control utility or directly via REST.
-- The Kubernetes API is grouped into multiple such groups based on their purpose, such as one for APIs, one for health, one for metrics and logs, etc.
 ```bash
-CACERT=$(kubectl config view --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}' | base64 -d)
-CERT=$(kubectl config view --raw -o jsonpath='{.users[0].user.client-certificate-data}' | base64 -d)
-KEY=$(kubectl config view --raw -o jsonpath='{.users[0].user.client-key-data}' | base64 -d)
+# 1. Xem cấu hình KubeConfig hiện tại (hoặc chỉ định một file rời bằng --kubeconfig)
+kubectl config view
+kubectl config view --kubeconfig=/root/my-kube-config
 
-# Return all the available API groups
-curl -s --cacert <(echo "$CACERT") --cert <(echo "$CERT") --key <(echo "$KEY") \
-     https://100.123.87.107:6443 -k | jq .
-     
-# Return all the supported resource groups
-curl -s --cacert <(echo "$CACERT") --cert <(echo "$CERT") --key <(echo "$KEY") \
-     https://100.123.87.107:6443/apis -k | rg name
+# 2. Xem context hiện tại và chuyển đổi sang context khác (LUÔN CHẠY ở đầu mỗi câu hỏi thi!)
+kubectl config current-context
+kubectl config use-context <context-name>
 
-curl -s --cacert <(echo "$CACERT") --cert <(echo "$CERT") --key <(echo "$KEY") \
-     https://100.123.87.107:6443/api/v1/namespaces/default/pods | jq .
-    
-curl -s --cacert <(echo "$CACERT") --cert <(echo "$CERT") --key <(echo "$KEY") \
-     https://100.123.87.107:6443/version | jq .
+# 3. Đặt namespace mặc định cho context đang dùng
+kubectl config set-context --current --namespace=<ns-name>
 
-curl -s --cacert <(echo "$CACERT") --cert <(echo "$CERT") --key <(echo "$KEY") \
-     https://100.123.87.107:6443/healthz
+# 4. Nạp thêm file kubeconfig ngoài vào biến môi trường hoặc đặt làm mặc định
+export KUBECONFIG="${KUBECONFIG}:/root/my-kube-config"
+cp /root/my-kube-config ~/.kube/config
 ```
-- These APIs are categorized into two:
-	- The core group: This is where all core functionality exists, such as namespaces, pods, replication controllers, events and points, nodes, bindings, persistent volumes, persistent volume claims, Configmaps secrets, services, etc.
-	- The named group: The named group APIs are more organized and going forward all the newer features are going to be made available through these named groups. It has groups under it for apps, extensions, networking, storage, authentication, authorization, etc. shown here are just a few.
+
+## Lecture 145: API Groups — 🎯 [CÓ THI CKAD: Hiểu cấu trúc Group] & 💡 [Đáng biết: `kubectl proxy`]
+- Kubernetes API Server phân chia các đường dẫn REST API thành nhiều nhóm theo mục đích (`/version`, `/healthz`, `/metrics`, `/logs`, và quan trọng nhất là **`/api`** cùng **`/apis`**):
+  1. **Core Group (`/api/v1`):** Nơi chứa toàn bộ các đối tượng cốt lõi lâu đời nhất: `namespaces`, `pods`, `replicationcontrollers`, `events`, `endpoints`, `nodes`, `bindings`, `persistentvolumes`, `persistentvolumeclaims`, `configmaps`, `secrets`, `services`, `serviceaccounts`.
+     - Trong file YAML: Chỉ ghi gọn `apiVersion: v1`.
+     - Trong RBAC Role: Khai báo là chuỗi rỗng `apiGroups: [""]`.
+  2. **Named Groups (`/apis/<group>/<version>`):** Các tính năng mở rộng về sau được tổ chức thành từng nhóm có tên cụ thể:
+     - `apps` (`v1`): `deployments`, `replicasets`, `statefulsets`, `daemonsets`.
+     - `networking.k8s.io` (`v1`): `ingresses`, `networkpolicies`.
+     - `batch` (`v1`): `jobs`, `cronjobs`.
+     - `storage.k8s.io` (`v1`): `storageclasses`.
+     - `rbac.authorization.k8s.io` (`v1`): `roles`, `rolebindings`, `clusterroles`, `clusterrolebindings`.
+     - `certificates.k8s.io` (`v1`): `certificatesigningrequests`.
 ![[Pasted image 20261008115959.png]]
-- An alternate option is to start a kubectl proxy client. The kubectl proxy command launches a proxy service locally on specified port, and uses credentials and certificates from your kubeconfig file to access the cluster. That way you don't have to specify those in the curl command: `kubectl proxy --port=8888`. Now you can access the kubectl proxy service at port 8001, and the proxy will use the credentials from kubeconfig file to forward your request to the kube-apiserver.
+
+- **Cách truy cập trực tiếp REST API bằng `curl` hoặc `kubectl proxy` — 💡 [NGOÀI ĐỀ THI — Đáng biết]:**
+  - Nếu dùng `curl` trực tiếp vào cổng `6443`, bạn phải truyền thủ công `--cacert`, `--cert`, `--key`.
+  - Thay vào đó, chạy **`kubectl proxy --port=8888`**: Lệnh này mở một HTTP proxy cục bộ lấy sẵn thông tin chứng chỉ từ `~/.kube/config` để chuyển tiếp yêu cầu của bạn lên `kube-apiserver`:
 ```bash
+kubectl proxy --port=8888 &
 curl http://localhost:8888/version
 curl http://localhost:8888/api/v1/namespaces/default/pods
 curl http://localhost:8888/apis/apps/v1/deployments
 ```
 > [!WARNING]
-> The kube-proxy and kubectl proxy are not the same:
-> - Kube-proxy is used to enable connectivity between pods and services across different nodes in the cluster.
-> - kubectl proxy is an HTTP proxy service created by kubectl utility to access the kube-apiserver
-## Lecture 146: Authorization
-- As an administrator of the cluster, we were able to perform all sorts of operations in it, such as viewing various objects like pods and nodes and deployments, creating or deleting objects such as adding or deleting pods or even nodes in the cluster.
-- As an admin, we're able to perform any operation, but soon we will have others accessing the cluster as well, such as the other administrators, developers, testers, or other applications like monitoring applications or continuous delivery applications like Jenkins, etc.
-- We can create accounts for them to access the cluster by creating usernames and passwords or tokens or signed TLS certificates or service account. But we don't want all of them to have the same level of access as us.
+> **Phân biệt `kube-proxy` vs `kubectl proxy`:**
+> - **`kube-proxy`:** Daemon chạy trên mỗi Worker Node (dùng iptables/IPVS) để định tuyến kết nối mạng giữa các `Pods` và `Services` xuyên suốt các Node trong Cluster.
+> - **`kubectl proxy`:** Dịch vụ HTTP proxy cục bộ do công cụ `kubectl` bật lên trên máy client để gọi vào `kube-apiserver`.
+
+## Lecture 146: Authorization Modes — 💡 [NGOÀI ĐỀ THI — Đáng biết]
 ![[Pasted image 20261008123503.png]]
-- Within the cluster, there are differemt authorization mechanisms supported by Kubernetes, such as:
-	- Node authorizer: The kubelet accesses the API server to read information about services, endpoints, nodes, and pods. It also reports to the kube-apiserver with information about the node, such as its status. These requests are handled by a special authorizer known as the node authorizer.
-	- ABAC: This is where you associate a user or a group of users with a set of permissions by creating a policy file with a set of policies defined in a JSON format. Every time you need to add or make a change in the security, you must edit this policy file manually and restart the kube API server. As such, the attribute based access control configurations are difficult to manage.
-	- RBAC: We define a rule in this case for developers. We create a rule with the set of permissions required for developers. Then we associate all the developers to that role. Similarly, create a role for security users with the right set of permissions required for them. Then associate the user to that role going forward whenever a change needs to be made to the users access, we simply modify the role and it reflects on all developers immediately.![[Pasted image 20261008125405.png]]
-	- Webhook: Say you want to manage authorization externally and not through the built in mechanisms. For instance, Open Policy Agent is a third party tool that helps with admission control and authorization. You can have Kubernetes make an API call to the open policy agent with the information about the user and his access requirements, and have the Open Policy Agent decide if the user should be permitted or not.![[Pasted image 20261008125525.png]]
-- There are two more modes: always allow and always deny.
-- The modes are set using the `--authorization-mode` option on the kube-apiserver. If you don't specify this option, it is set to always allow by default. You may provide a comma separated list of multiple modes that you wish to use:  `--authorization-mode=Node,RBAC,Webhook`.
-- When you have multiple modes configured, your request is authorized using each one in the order it is specified.
-## Lecture 147: Role Based Access Controls
-- We can create a role by creating a role object:
-```bash
-kubectl create role developer --verb=get --resource=pods
-```
+- **Các cơ chế phân quyền được Kubernetes hỗ trợ (`--authorization-mode` trên `kube-apiserver`):**
+  1. **`Node` Authorizer:** Xử lý các request xuất phát từ `kubelet` trên các Worker Node (đọc thông tin Services/Endpoints/Pods và báo cáo trạng thái Node về API Server).
+  2. **`ABAC` (Attribute-Based Access Control):** Gắn quyền cho user qua một file chính sách định dạng JSON tĩnh trên máy chủ; mỗi lần sửa phải sửa file thủ công và khởi động lại `kube-apiserver` nên rất bất tiện.
+  3. **`RBAC` (Role-Based Access Control — Chuẩn tiêu chuẩn):** Tạo một `Role` chứa tập quyền hạn, sau đó gắn (`Bind`) User/ServiceAccount vào Role đó. Khi cần sửa quyền chỉ cần sửa Role là có hiệu lực tức thì.
+  4. **`Webhook`:** Ủy quyền việc kiểm tra phân quyền ra một công cụ bên thứ 3 bên ngoài Cluster (như **Open Policy Agent - OPA**).
+  5. **`AlwaysAllow` / `AlwaysDeny`:** Luôn cho phép (mặc định nếu không cấu hình cờ `--authorization-mode`) hoặc luôn từ chối mọi yêu cầu.
+- Khi cấu hình nhiều mode cùng lúc (VD: `--authorization-mode=Node,RBAC,Webhook`), yêu cầu sẽ được kiểm tra lần lượt theo thứ tự từ trái sang phải; ngay khi một module chấp thuận thì người dùng được cấp quyền thực thi.
+![[Pasted image 20261008125405.png]]
+![[Pasted image 20261008125525.png]]
+
+## Lecture 147, 148 & 149: Role Based Access Controls (RBAC) & Labs — 🎯 [CÓ THI CKAD]
+- **Bản chất RBAC trong phạm vi 1 Namespace (`Role` + `RoleBinding`):**
+  - **`Role`:** Định nghĩa **"Được làm gì (`verbs`) trên đối tượng nào (`resources`, `apiGroups`)?"** trong phạm vi một Namespace cụ thể. Có thể giới hạn chi tiết đến từng tên đối tượng cụ thể bằng trường `resourceNames` (VD: chỉ cho phép sửa Pod tên `blue` và `orange`).
+  - **`RoleBinding`:** Kết nối **`Subjects`** (`User`, `Group`, hoặc `ServiceAccount`) với một **`Role`** trong cùng Namespace đó.
+![[Pasted image 20261008131743.png]]
+
 ```yaml
+# 1. Định nghĩa Role
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: developer
+  namespace: default
 rules:
-- apiGroups: [""]
+- apiGroups: [""] # "" đại diện cho Core API Group
   resources: ["pods"]
-  resourceNames: ["blue", "orange"]
+  resourceNames: ["blue", "orange"] # (Tùy chọn) Chỉ giới hạn quyền trên Pod 'blue' và 'orange'
   verbs: ["list", "get", "create", "update", "delete"]
 - apiGroups: [""]
-  resources: ["ConfigMap"]
+  resources: ["configmaps"]
   verbs: ["create"]
-```
-- The next step is to link the user to that rule. For this we create another object called rule binding. The rule binding object links a user object to a rule.
-```bash
-k create rolebinding devuser-developer-binding --role=developer --user=dev-user
-```
-```yaml
+---
+# 2. Định nghĩa RoleBinding gắn User 'dev-user' vào Role 'developer'
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: devuser-developer-binding
+  namespace: default
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -189,93 +154,52 @@ subjects:
   kind: User
   name: dev-user
 ```
-> [!INFO]
-> Also note that the roles and role bindings fall under the scope of namespaces. So here the dev-user gets access to pods and ConfigMaps within the default namespace. If you want to limit the dev users access within a different namespace, then specify the namespace within the metadata of the definition file while creating them.
 
-![[Pasted image 20261008131743.png]]
-- To view more details about the role:
+### Bộ lệnh Imperative tạo và kiểm tra RBAC cực nhanh trong phòng thi
 ```bash
-❯ kubectl create role developer --verb=get --resource=pods
-role.rbac.authorization.k8s.io/developer created
+# 1. Tạo Role và RoleBinding chỉ bằng 2 dòng lệnh CLI
+kubectl create role developer --verb=get,list,create,delete --resource=pods -n default
+kubectl create rolebinding devuser-developer-binding --role=developer --user=dev-user -n default
 
-❯ kubectl create rolebinding devuser-developer-binding --role=developer --user=dev-user
-rolebinding.rbac.authorization.k8s.io/devuser-developer-binding created
+# Nếu gắn cho ServiceAccount (Rất hay gặp trong CKAD):
+kubectl create rolebinding sa-dev-binding --role=developer --serviceaccount=default:my-sa -n default
 
-❯ kubectl describe role developer
-Name:         developer
-Labels:       <none>
-Annotations:  <none>
-PolicyRule:
-  Resources  Non-Resource URLs  Resource Names  Verbs
-  ---------  -----------------  --------------  -----
-  pods       []                 []              [get]
-❯ k describe rolebinding devuser-developer-binding
-Name:         devuser-developer-binding
-Labels:       <none>
-Annotations:  <none>
-Role:
-  Kind:  Role
-  Name:  developer
-Subjects:
-  Kind  Name      Namespace
-  ----  ----      ---------
-  User  dev-user
+# 2. Xem chi tiết Role và RoleBinding
+kubectl describe role developer
+kubectl describe rolebinding devuser-developer-binding
+
+# 3. Tự kiểm tra quyền hạn của mình hoặc giả danh (--as) User/ServiceAccount khác bằng 'auth can-i'
+kubectl auth can-i create deployments
+kubectl auth can-i delete nodes
+kubectl auth can-i delete deployments --as dev-user
+kubectl auth can-i get pods --as dev-user --namespace test
+kubectl auth can-i list pods --as=system:serviceaccount:default:my-sa -n default
 ```
-- If you, being a user, would like to see if you have access to a particular resource in the cluster, you can run:
+
+## Lecture 150, 151 & 152: ClusterRoles & ClusterRoleBindings & Labs — 🎯 [CÓ THI CKAD]
+- **Phân loại phạm vi tài nguyên trong Kubernetes:**
+  - **Namespaced resources:** `pods`, `replicasets`, `jobs`, `deployments`, `services`, `secrets`, `configmaps`, `roles`, `rolebindings`, `persistentvolumeclaims`...
+  - **Cluster-scoped resources (Không thuộc về namespace nào):** `nodes`, `persistentvolumes`, `storageclasses`, `clusterroles`, `clusterrolebindings`, `certificatesigningrequests`, `namespaces`, `customresourcedefinitions`...
 ```bash
-❯ kubectl auth can-i create deployments
-yes
-
-❯ kubectl auth can-i delete nodes
-Warning: resource 'nodes' is not namespace scoped
-
-yes
-❯ kubectl auth can-i delete deployments --as dev-user
-no
-
-❯ kubectl auth can-i get pods --as dev-user --namespace test
-no
+# Liệt kê danh sách các tài nguyên có hoặc không có Namespace
+kubectl api-resources --namespaced=true
+kubectl api-resources --namespaced=false
 ```
-## Lecture 148 & 149: Lab - Role Based Access Controls
-```bash
-kubectl describe pod kube-apiserver-controlplane -n kube-system
-```
-- Only in kubeadm and contest:
-```bash
-cat /etc/kubernetes/manifests/kube-apiserver.yaml
-ps -aux | grep authorization
-kubectl get role -A --no-header | wc -l
-kubectl config view
-kubectl create deployment nginx --image=nginx --replicas=3 --as dev-user
-```
-## Lecture 150: Cluster Roles
-- A lot of namespace resources throughout this course, like pods, replica sets, jobs, deployments, services, secrets, roles and role bindings are created in the namespace you specify when you create them. If you don't specify a namespace, they're created in the default namespace. To view them or delete them or update them, you always specify the right namespace.
-- The cluster scoped resources are those where you don't specify a namespace when you create them. Like nodes, persistent volumes persist the cluster roles and cluster role bindings. Certificate signing request and namespace objects themselves are of course not namespaced.
-> [!INFO]
-> Note that this is not a comprehensive list of resources. To see a full list of Namespaced and non namespace resources. Run the command with namespace option set:
-> ```bash
-> kubectl api-resources --namespaced=true
-> ```
-- Cluster roles are just like roles, except they are for cluster scoped resources.
 ![[Pasted image 20261012132453.png]]
+- **Khi nào dùng `ClusterRole` & `ClusterRoleBinding`?**
+  1. Khi cần phân quyền trên các **tài nguyên Cluster-scoped** (như cho phép xem/xóa `nodes` hoặc `persistentvolumes`).
+  2. Khi cần phân quyền trên các **tài nguyên Namespaced** (như `pods`) nhưng muốn người dùng/ServiceAccount đó có quyền truy cập **trên toàn bộ TẤT CẢ các Namespaces** trong Cluster cùng một lúc.
+
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: cluster-administration
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - nodes
-  verbs:
-  - list
-  - get
-  - create
-  - delete
-```
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["list", "get", "create", "delete"]
 ---
-```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -289,160 +213,121 @@ subjects:
   kind: User
   name: cluster-admin
 ```
-- You can create a cluster role for namespace resources as well. When you do that, the user will have access to these resources across all namespaces.
-- Earlier, when we created a role to authorize a user to access pods, the user had access to the pods in a particular namespace alone. With cluster roles, when you authorize a user to access the pods, the user gets access to all pods across the cluster.
-- Kubernetes creates a number of cluster roles by default when the cluster is first set up.
-## Lecture 151 & 152: Lab - Cluster Roles
 ```bash
-kubectl get no --as michelle
+# Tạo nhanh bằng CLI và kiểm tra với cờ --as
+kubectl create clusterrole node-admin --verb=get,list,watch,create,delete --resource=nodes
+kubectl create clusterrolebinding michelle-binding --clusterrole=node-admin --user=michelle
+kubectl get nodes --as michelle
 ```
-## Lecture 153: Admission Controllers
-- Admission controllers help us implement better security measures to enforce how a cluster is used such as:
-	- Change the request itself
-	- Perform additional operations before the pod get created.
+
+## Lecture 153, 154, 155, 156, 157 & 158: Admission Controllers (Validating & Mutating) — 💡 [NGOÀI ĐỀ THI — Đáng biết bản chất] & 👀 [Xem qua phần cấu hình `kube-apiserver`]
 ![[Pasted image 20261012135937.png]]
-- There are a number of admission controllers that come pre-built with Kubernetes, such as:
-	- AlwaysPullImages: That ensures that every time a pod is created, the images are always pulled.
-	- The DefaultStorageClass admission controller that observes the creation of PVCs and automatically adds the default storage class to them if one is not specified
-	- The EventRateLimit admission controller can help set a limit on the requests with the API server can handle at a time to prevent the API server from flooding with requests
-	- The NamespaceExists admission controller rejects requests to namespaces that do not exist.
-	- and there are many more admission controllers available.
-> [!INFO]
-> There is another admission controller that is not enabled by default, and that is called as the NamespaceAutoProvision admission controller. This will automatically create the namespace if it does not exist.
+- **Tại sao RBAC thôi là chưa đủ?** RBAC chỉ kiểm tra xem bạn có quyền `create pod` hay không. Nhưng nếu muốn bắt buộc mọi Pod tạo ra phải luôn kéo image mới nhất, không được chạy dưới quyền root, hoặc tự động gán StorageClass mặc định cho PVC, ta cần **Admission Controllers** — bước chặn kiểm duyệt cuối cùng trước khi lưu đối tượng vào `etcd`.
+- **Một số Admission Controllers tích hợp sẵn tiêu biểu:**
+  - `AlwaysPullImages`: Ép mọi Pod khi tạo đều đặt `imagePullPolicy: Always`.
+  - `DefaultStorageClass`: Tự động điền StorageClass mặc định vào PVC nếu người dùng không khai báo.
+  - `EventRateLimit`: Giới hạn tốc độ gửi request để chống làm ngập API Server.
+  - `NamespaceLifecycle` *(thay thế cho `NamespaceExists` và `NamespaceAutoProvision` cũ đã bị khai tử)*: Từ chối mọi request tạo tài nguyên vào một Namespace chưa tồn tại, đồng thời cấm xóa 3 namespace hệ thống (`default`, `kube-system`, `kube-public`).
 
-> [!WARNING]
-> This instruction can only be used on kubeadm setup.
-```bash
-kube-apiserver -h | rg enable-admission-plugins
+### Phân biệt `Mutating` vs `Validating` Admission Controllers & Webhooks (`Lecture 156`)
+![[Pasted image 20261012151002.png]]
+1. **Mutating Admission Controllers (Biến đổi — Luôn chạy TRƯỚC):** Có khả năng **chỉnh sửa/thêm trường** vào nội dung request của người dùng trước khi tạo đối tượng (VD: `DefaultStorageClass` tự thêm trường `storageClassName: default` vào PVC).
+2. **Validating Admission Controllers (Kiểm tra — Luôn chạy SAU Mutating):** Chỉ kiểm tra dữ liệu và trả về **Chấp nhận (Allow)** hoặc **Từ chối (Reject)** chứ không sửa đổi đối tượng (VD: `NamespaceLifecycle`). Việc chạy Mutating trước giúp Validating kiểm tra được cả những thay đổi vừa được Mutating thêm vào.
+3. **External Admission Webhooks (`MutatingAdmissionWebhook` & `ValidatingAdmissionWebhook`):** Cho phép Kubernetes gọi tới một Webhook Server do chính bạn tự lập trình (chạy trong hoặc ngoài Cluster qua TLS) để thực thi các quy tắc kiểm duyệt/biến đổi tùy chỉnh theo nghiệp vụ riêng.
 
-kubectl exec kube-apiserver-controlplane -n kube-system -- kube-apiserver -h | rg enable-admission-plugins
-```
+- **👀 [XEM QUA — Thuộc CKA]: Cách xem và bật/tắt Admission Plugins trên `kube-apiserver`:**
 ![[Pasted image 20261012141547.png]]
 ![[Pasted image 20261012141605.png]]
-> [!danger] Attention
-> The NamespaceAutoProvision and NamespaceExists admission controllers are deprecated and is now replaced by NamespaceLifecycle admisstion controller. It will make sure that requests to a non-existent namespace is rejected, and that the default namespace such as default, kube-system, and kube-public cannot be deleted
-## Lecture 154 & 155: Lab - Admission Controllers
 ```bash
-kubectl exec kube-apiserver-controlplane -n kube-system -- kube-apiserver -h | rg enable-admission-plugins
-vim /etc/kubernetes/manifests/kube-apiserver.yaml
+# Kiểm tra các admission plugins đang bật trên kubeadm cluster:
+kubectl exec kube-apiserver-controlplane -n kube-system -- kube-apiserver -h | grep enable-admission-plugins
+grep "admission-plugins" /etc/kubernetes/manifests/kube-apiserver.yaml
 ```
-## Lecture 156: Validating and Mutating Admission Controllers
-- We looked at the namespace exists or namespace lifecycle admission controller. It can help validate if a namespace already exists and reject the request if it doesn't exist. This is known as a validating admission controller.
-- Let's look at another type of admission controller plugin named as the default storage class plugin. This is a plugin that is enabled by default.
 
-> [!abstract] Example of mutation admission controller
-> Say for example, you're submitting a request to create a PVC. The request goes through authentication, authorization, and finally the admission controller. The DefaultStorageClass admission controller will watch for request to create a PVC and check if it has a storage class mentioned in it. If not, which is true in our case, it will modify your request to add the default storage class to your request. This could be whatever storage class is configured as the default storage class in your cluster. So when the PVC is created and you inspect it, you will see that a storage class default is added to it even though you hadn't specified it during the creation. So this type of admission controller is known as a mutating admission controller. It can change or mutate the object itself before it is created.
-
-- There may be admission controllers that can do both that can mutate a request as well as validate a request.
-- Generally mutating admission controllers are invoked first, followed by validating admission controllers so that any change made by the mutating admission controller can be considered during the validation process.
-- There are two special admission controllers available MutatingAdmissionWebhook and then ValidatingAdmissionWebhook.
-- We can configure these webhooks to point to a server that's hosted either within the Kubernetes cluster or outside it and our server will have our own admission webhook service running with our own code and logic.
-- After a request goes through all the built in admission controllers, it hits the webhook that's configured.
-- ??? (Deploy our own webhook server)
-![[Pasted image 20261012151002.png]]
-## Lecture 157 & 158: Lab - Validating and Mutating Admission Controllers
-```bash
-kubectl create secret tls webhook-demo \
-  --cert=path/to/cert.crt
-  --key=path/to/key.key
-  
-kubectl get po webhook-server -o yaml
-```
-## Lecture 159: API Versions
+## Lecture 159, 160, 161 & 162: API Versions & Deprecations — 🎯 [CÓ THI CKAD]
 ![[Pasted image 20261012153154.png]]
-- We know that everything under APIs are the API groups such as apps, extensions, networking, etc. And each API group has different versions:
-	- When an API group is at V1 that means it is a GA stable version (generally available stable version). The API group may have other versions such as Beta or Alpha as v1beta 1 or v1alpha 1 respectively.
-```bash
-# Xem ngay dòng GROUP và VERSION của một resource (ví dụ: ingress, cronjob, networkpolicy)
-kubectl api-resources | grep -i ingress
+- **3 cấp độ trưởng thành của một API Version:**
+  1. **Alpha (VD: `v1alpha1`):** Tính năng mới thử nghiệm, có thể chứa lỗi, **bị tắt mặc định** trên API Server và có thể bị xóa bỏ bất cứ lúc nào ở bản K8s sau.
+  2. **Beta (VD: `v1beta1`):** Đã được kiểm thử kỹ, **được bật mặc định**, cam kết sẽ tiến lên bản GA ổn định.
+  3. **GA / Stable (VD: `v1`):** Bản chính thức ổn định lâu dài.
+- **Preferred Version vs Storage Version (`Lecture 160`):**
+  - Một API Group có thể hỗ trợ nhiều version cùng lúc (VD: vừa hỗ trợ `v1beta1`, vừa hỗ trợ `v1`).
+  - **Preferred Version:** Phiên bản mặc định được trả về khi bạn chạy `kubectl get`.
+  - **Storage Version:** Phiên bản duy nhất được dùng để lưu trữ đối tượng xuống cơ sở dữ liệu `etcd` (dù bạn gửi YAML lên bằng version nào thì API Server cũng quy đổi về Storage Version để lưu).
 
+### Các lệnh xử lý bài toán Deprecated API trong phòng thi CKAD
+```bash
+# 1. Xem ngay GROUP và VERSION chuẩn hiện tại mà Cluster đang hỗ trợ (Giữ lại dòng tiêu đề)
+kubectl api-resources | head -n 1 && kubectl api-resources | grep -i ingress
+
+# 2. Hoặc dùng kubectl explain để xem ngay dòng KIND và VERSION ở 5 dòng đầu
 kubectl explain deployment | head -n 5
-# Sẽ in ra ngay lập tức:
 # KIND:       Deployment
 # VERSION:    apps/v1
-```
-**Cấu trúc phân nhánh API:** Kubernetes chia API thành 2 nhánh chính:
-1. **Core Group (`/api/v1`):** Chứa các đối tượng cơ bản lâu đời nhất như `Pod`, `Service`, `Namespace`, `ConfigMap`, `Secret`, `PersistentVolume`, `ServiceAccount`. Khi viết trong file YAML, chúng **không có tên nhóm** ở trước mà chỉ ghi gọn là `apiVersion: v1`.
-2. **Named Groups (`/apis/<group>/<version>`):** Các tính năng mở rộng về sau được gom vào từng nhóm chức năng cụ thể. Ví dụ:
-    - `apps/v1` (`Deployment`, `ReplicaSet`, `StatefulSet`, `DaemonSet`)
-    - `networking.k8s.io/v1` (`Ingress`, `NetworkPolicy`)
-    - `batch/v1` (`Job`, `CronJob`)
-    - `rbac.authorization.k8s.io/v1` (`Role`, `RoleBinding`, `ClusterRole`, `ClusterRoleBinding`)
-    - `storage.k8s.io/v1` (`StorageClass`)
-- **Cấp độ ổn định (Stability Levels):** Đi từ `v1alpha1` (thử nghiệm, dễ lỗi, tắt mặc định) $\rightarrow$ `v1beta1` (đã test kỹ, bật mặc định) $\rightarrow$ `v1` (GA - bản chính thức ổn định).
-- **Tại sao lại có bài 159 & 160 trong mục Security (09 - Security)?**
-	- **Liên quan trực tiếp đến RBAC (`Role`):** Khi bạn viết một `Role` (như ví dụ ở câu trả lời trước), trường `apiGroups: [""]` chính là đại diện cho **Core Group (`v1`)**. Nhưng nếu đề bài CKAD yêu cầu cấp quyền cho một `ServiceAccount` được phép đọc `Deployment` hoặc `Ingress`, bạn bắt buộc phải biết `Deployment` nằm ở group `apps` (`apiGroups: ["apps"]`) và `Ingress` nằm ở `networking.k8s.io` (`apiGroups: ["networking.k8s.io"]`).
-	- **Sửa lỗi Deprecated API:** Ví dụ đề bài đưa file YAML có `CronJob` dùng `batch/v1beta1` hoặc `Ingress` dùng `networking.k8s.io/v1beta1`, bạn phải biết cách tra cứu phiên bản `v1` hiện tại mà Cluster đang hỗ trợ để sửa lại.
-## Lecture 160: API Deprecations
-- A single API group can support multiple versions at a time.
-- plugin `kubectl convert` để tự động chuyển đổi file YAML từ version cũ sang version mới:
-```bash
+
+# 3. Chuyển đổi tự động file YAML từ apiVersion cũ sang apiVersion mới bằng plugin kubectl convert
 kubectl convert -f old-ingress.yaml --output-version networking.k8s.io/v1 > new-ingress.yaml
 ```
-- **Preferred Version (Phiên bản ưu tiên):** Khi một API Group hỗ trợ nhiều version cùng lúc (như `v1`, `v1beta1`), phiên bản được K8s mặc định sử dụng khi bạn gõ lệnh `kubectl get` gọi là **Preferred Version**.
-- **Storage Version (Phiên bản lưu trữ):** Dù bạn gửi YAML lên bằng `v1beta1` hay `v1`, khi lưu xuống cơ sở dữ liệu **etcd**, K8s chỉ dùng **1 phiên bản duy nhất** để lưu trữ gọi là **Storage Version**.
-- **Lệnh kiểm tra cột `APIVERSION` không bị mất tiêu đề:** Dùng `kubectl api-resources | head -n 1 && kubectl api-resources | grep -i ingress` sẽ giúp bạn nhìn rõ cột nào là `APIGROUP`, cột nào là `APIVERSION`.
-## Lecture 161 & 162: Lab - API Versions/Deprecations
-```bash
-kubectl convert -f old-ingress.yaml --output-version networking.k8s.io/v1 > new-ingress.yaml
-```
-## Lecture 163: Custom Resource Definition
+
+## Lecture 163, 164, 165 & 166: Custom Resource Definition (CRD), Custom Controllers & Operator Framework — 🎯 [CÓ THI CKAD: CRD & CR] & 💡 [Đáng biết: Controller & Operator]
 ![[Pasted image 20261019190754.png]]
-- First, we have to first define what that resource is that we want to create. But for that we need what is known as a custom resource definition or CRD. We're going to use CRD to tell Kubernetes that we would like to create objects of custom kind.
+![[Pasted image 20261019220726.png]]
+- **Mối quan hệ giữa 3 thành phần mở rộng Kubernetes (`CRD` + `Custom Controller` = `Operator`):**
+  1. **Custom Resource Definition (`CRD`) — 🎯 [CÓ THI CKAD]:** Dùng để đăng ký với Kubernetes API Server một kiểu tài nguyên hoàn toàn mới do bạn tự định nghĩa (VD: `kind: FlightTicket`, `apiVersion: flights.com/v1`), bao gồm phạm vi (`Namespaced` hay `Cluster`), tên gọi (`singular`, `plural`, `shortNames`), và lược đồ kiểm tra kiểu dữ liệu hợp lệ (**`openAPIV3Schema`**).
+  2. **Custom Resource (`CR`) — 🎯 [CÓ THI CKAD]:** Là đối tượng YAML cụ thể được tạo ra dựa trên `CRD` (giống như tạo một Pod dựa trên định nghĩa Pod). Khi bạn `kubectl apply` một `CR`, Kubernetes chỉ kiểm tra schema và lưu nó vào `etcd`.
+  3. **Custom Controller & Operator Framework (`Lecture 165 & 166`) — 💡 [NGOÀI ĐỀ THI — Đáng biết]:**
+     - Nếu chỉ tạo `CRD` và `CR`, đối tượng chỉ nằm im trong `etcd` chứ không có hành động thực tế nào diễn ra.
+     - **Custom Controller:** Là một chương trình (thường viết bằng Go/Python và đóng gói chạy như một Pod trong Cluster) liên tục lắng nghe (`watch`) sự kiện tạo/sửa/xóa của các đối tượng `CR` trên API Server, từ đó thực thi logic nghiệp vụ tương ứng (VD: khi thấy `FlightTicket` được tạo, Controller tự động gọi API của hãng hàng không để đặt vé thật).
+     - **Operator Framework:** Là phương pháp đóng gói kết hợp **`CRD` + `Custom Controller`** để tự động hóa việc vận hành các ứng dụng có trạng thái phức tạp (như Database backup/restore, nâng cấp phiên bản, tự phục hồi lỗi — ví dụ: Prometheus Operator, MySQL Operator, Etcd Operator).
+
 ```yaml
+# 1. Tạo CustomResourceDefinition (CRD)
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: flighttickets.flights.com
+  name: flighttickets.flights.com   # Bắt buộc phải đặt theo cú pháp: <plural>.<group>
 spec:
-  scope: Namespaced
-  group: flights.com # apiVersion: flights.com/v1
+  scope: Namespaced                 # Namespaced hoặc Cluster
+  group: flights.com                # Tạo nên phần đầu của apiVersion: flights.com/v1
   names:
-  	kind: FlightTicket # kind: FlightTicket
-	singular: flightticket
-	plural: flighttickets
-	shortNames:
-	- ft
+    kind: FlightTicket              # Tạo nên kind: FlightTicket
+    singular: flightticket
+    plural: flighttickets
+    shortNames:
+    - ft
   versions:
   - name: v1
     served: true
-    storage: true
+    storage: true                   # Chỉ duy nhất 1 version được đánh dấu storage: true
     schema:
-	  openAPIV3Schema:
-	    type: object
-	    properties:
-	      spec:
-	        type: object
-	        properties:
-	          from:
-	            type: string
-	          to:
-	            type: string
-	          number:
-	            type: integer
-	            minimum: 1
-	            maximum: 10
-```
-
-```yaml
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              from:
+                type: string
+              to:
+                type: string
+              number:
+                type: integer
+                minimum: 1
+                maximum: 10
+---
+# 2. Tạo Custom Resource (CR) dựa trên CRD vừa khai báo
 apiVersion: flights.com/v1
 kind: FlightTicket
 metadata:
   name: my-flight-ticket
 spec:
- from: Mumbai
- to: London
- number: 2
+  from: Mumbai
+  to: London
+  number: 2
 ```
-- you can use custom resource definitions or crds to create any kind of resource you want on Kubernetes and specify a schema and add validations.
-- But it's only going to allow you to create these resources and store them in etcd. It's not actually going to do anything about these resources because we don't yet have a controller for it.
-- The second part is building a custom controller that can handle these resources, that can watch when these resources are created, and perform actions based on the resource specifications you see without a controller.
-## Lecture 164: Lab - Custom Resource Definition
 ```bash
+# Các lệnh tra cứu CRD & cấu trúc trường của Custom Resource trong phòng thi CKAD
+kubectl get crd
 kubectl describe crd collectors.monitoring.controller
+kubectl explain flightticket.spec --recursive
 ```
-## Lecture 165: Custom Controllers
-?
-## Lecture 166: Operator Framework
-?
-![[Pasted image 20261019220726.png]]
